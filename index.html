@@ -505,10 +505,11 @@ hr {
 </div>
 
 <script>
-// CONFIGURAÇÕES DO SUPABASE
+// CONFIGURAÇÕES DO SUPABASE (Corrigidas e unificadas)
 const SUPABASE_URL = "https://kgidkxaqvgcqiqwqxvut.supabase.co"; 
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtnaWRreGFxdmdjcWlxd3F4dnV0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0ODc0MzAsImV4cCI6MjA5ODA2MzQzMH0.DLQoO8_q_QeW-a084ZDCFRc0OIeuEDaYpkUg2tSCB0E";
 
+// Conexão blindada usando a nova URL
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let contatos = [];
@@ -591,21 +592,25 @@ function logout() {
 async function syncLoadAll() {
     if(!usuarioLogado) return;
 
-    // 1. Carregar contas WA
-    let resWa = await supabaseClient.from('whatsapp_accounts').select('*').eq('operator_name', usuarioLogado).order('id', { ascending: true });
-    whatsappAccounts = resWa.data || [];
+    try {
+        // 1. Carregar contas WA
+        let resWa = await supabaseClient.from('whatsapp_accounts').select('*').eq('operator_name', usuarioLogado).order('id', { ascending: true });
+        whatsappAccounts = resWa.data || [];
 
-    // 2. Carregar Scripts
-    let resScr = await supabaseClient.from('message_scripts').select('*').eq('operator_name', usuarioLogado).order('id', { ascending: true });
-    listaScripts = resScr.data || [];
+        // 2. Carregar Scripts
+        let resScr = await supabaseClient.from('message_scripts').select('*').eq('operator_name', usuarioLogado).order('id', { ascending: true });
+        listaScripts = resScr.data || [];
 
-    // 3. Carregar Fila de Contatos
-    let resCon = await supabaseClient.from('contacts_queue').select('*').eq('operator_name', usuarioLogado).order('id', { ascending: true });
-    contatos = resCon.data || [];
+        // 3. Carregar Fila de Contatos
+        let resCon = await supabaseClient.from('contacts_queue').select('*').eq('operator_name', usuarioLogado).order('id', { ascending: true });
+        contatos = resCon.data || [];
 
-    renderWA();
-    renderScripts();
-    renderContatos();
+        renderWA();
+        renderScripts();
+        renderContatos();
+    } catch (error) {
+        console.error("Erro na sincronização:", error);
+    }
 }
 
 /* GERENCIAMENTO DE WHATSAPP VIA BANCO */
@@ -963,6 +968,5 @@ setInterval(async () => {
     }
 }, 1000);
 </script>
-
 </body>
 </html>
