@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
@@ -505,14 +505,13 @@ hr {
 </div>
 
 <script>
-// APAGUE as linhas antigas e COLE estas no lugar:
+// CONFIGURAÇÕES DO SUPABASE - COLOQUE SEUS DADOS REAIS AQUI:
 const SUPABASE_URL = "https://kgidkxaqvgcfiqwqxvut.supabase.co"; 
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtnaWRreGFxdmdjcWlxd3F4dnV0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0ODc0MzAsImV4cCI6MjA5ODA2MzQzMH0.DLQoO8_q_QeW-a084ZDCFRc0OIeuEDaYpkUg2tSCB0E";
+const SUPABASE_KEY = "sb_publishable_QlPAF15exkBSAno8hhkaxQ_adQAR47t";
 
-// Correção do conflito de nomes:
-supabase.supabaseUrl = SUPABASE_URL;
-supabase.supabaseKey = SUPABASE_KEY;
-supabase.auth.setAuth(SUPABASE_KEY);
+// Inicialização corrigida usando o objeto global da CDN
+const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
 let contatos = [];
 let whatsappAccounts = [];
 let listaScripts = [];
