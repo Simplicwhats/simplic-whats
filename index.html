@@ -431,7 +431,7 @@ hr {
             </select>
 
         <label class="small">Cole os números da lista (um por linha)</label>
-        <textarea id="telefonesInputModal" rows="6" placeholder="5511999999999&#10;5511888888888" style="margin-top:4px Papai."></textarea>
+        <textarea id="telefonesInputModal" rows="6" placeholder="5511999999999&#10;5511888888888" style="margin-top:4px;"></textarea>
         
         <div class="flex-group" style="margin-top: 20px;">
             <button class="gray" onclick="fecharModal('modalContatos')" style="flex:1;">Cancelar</button>
@@ -509,8 +509,8 @@ hr {
 const SUPABASE_URL = "https://kgidkxaqvgcfiqwqxvut.supabase.co"; 
 const SUPABASE_KEY = "sb_publishable_QlPAF15exkBSAno8hhkaxQ_adQAR47t";
 
-// Nome alterado de 'supabase' para 'db' para evitar conflito com a CDN global
-const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+// Variável alterada para 'supabaseClient' para total isolamento do escopo global da CDN
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let contatos = [];
 let whatsappAccounts = [];
@@ -593,15 +593,15 @@ async function syncLoadAll() {
     if(!usuarioLogado) return;
 
     // 1. Carregar contas WA
-    let resWa = await db.from('whatsapp_accounts').select('*').eq('operator_name', usuarioLogado).order('id', { ascending: true });
+    let resWa = await supabaseClient.from('whatsapp_accounts').select('*').eq('operator_name', usuarioLogado).order('id', { ascending: true });
     whatsappAccounts = resWa.data || [];
 
     // 2. Carregar Scripts
-    let resScr = await db.from('message_scripts').select('*').eq('operator_name', usuarioLogado).order('id', { ascending: true });
+    let resScr = await supabaseClient.from('message_scripts').select('*').eq('operator_name', usuarioLogado).order('id', { ascending: true });
     listaScripts = resScr.data || [];
 
     // 3. Carregar Fila de Contatos
-    let resCon = await db.from('contacts_queue').select('*').eq('operator_name', usuarioLogado).order('id', { ascending: true });
+    let resCon = await supabaseClient.from('contacts_queue').select('*').eq('operator_name', usuarioLogado).order('id', { ascending: true });
     contatos = resCon.data || [];
 
     renderWA();
@@ -618,7 +618,7 @@ async function addWA(){
 
     let isFirst = whatsappAccounts.length === 0;
 
-    await db.from('whatsapp_accounts').insert([{
+    await supabaseClient.from('whatsapp_accounts').insert([{
         operator_name: usuarioLogado,
         number: num,
         sent: 0,
@@ -678,8 +678,8 @@ function renderWA(){
 }
 
 async function selectWA(id){
-    await db.from('whatsapp_accounts').update({ selected: false }).eq('operator_name', usuarioLogado);
-    await db.from('whatsapp_accounts').update({ selected: true }).eq('id', id);
+    await supabaseClient.from('whatsapp_accounts').update({ selected: false }).eq('operator_name', usuarioLogado);
+    await supabaseClient.from('whatsapp_accounts').update({ selected: true }).eq('id', id);
     await syncLoadAll();
 }
 
@@ -689,7 +689,7 @@ async function alterarStatusRapido(id, i, statusAlvo) {
         document.getElementById("editModalStatus").value = "restrito";
         toggleTempoRestritoVisibilidade();
     } else {
-        await db.from('whatsapp_accounts').update({ status: statusAlvo, restricted_until: null }).eq('id', id);
+        await supabaseClient.from('whatsapp_accounts').update({ status: statusAlvo, restricted_until: null }).eq('id', id);
         await syncLoadAll();
     }
 }
@@ -743,7 +743,7 @@ function abrirEditarModal(i) {
             }
         }
         
-        await db.from('whatsapp_accounts').update({
+        await supabaseClient.from('whatsapp_accounts').update({
             number: novoNumero,
             sent: novosAcionamentos,
             status: novoStatus,
@@ -760,7 +760,7 @@ function abrirEditarModal(i) {
 
 async function removeWA(id){
     if(!confirm("Tem certeza que deseja remover esta conta?")) return;
-    await db.from('whatsapp_accounts').delete().eq('id', id);
+    await supabaseClient.from('whatsapp_accounts').delete().eq('id', id);
     await syncLoadAll();
 }
 
@@ -783,7 +783,7 @@ async function salvarContatos(){
         script_nome: scriptVinculado.nome
     }));
 
-    await db.from('contacts_queue').insert(packageData);
+    await supabaseClient.from('contacts_queue').insert(packageData);
 
     document.getElementById("telefonesInputModal").value = "";
     fecharModal("modalContatos");
@@ -792,12 +792,12 @@ async function salvarContatos(){
 
 async function limparContatos(){
     if(!confirm("Remover todos os clientes da fila?")) return;
-    await db.from('contacts_queue').delete().eq('operator_name', usuarioLogado);
+    await supabaseClient.from('contacts_queue').delete().eq('operator_name', usuarioLogado);
     await syncLoadAll();
 }
 
 async function removerContatoFila(id){
-    await db.from('contacts_queue').delete().eq('id', id);
+    await supabaseClient.from('contacts_queue').delete().eq('id', id);
     await syncLoadAll();
 }
 
@@ -834,7 +834,7 @@ async function salvarScript(){
 
     let isFirst = listaScripts.length === 0;
 
-    await db.from('message_scripts').insert([{
+    await supabaseClient.from('message_scripts').insert([{
         operator_name: usuarioLogado,
         nome: nome,
         texto: texto,
@@ -875,21 +875,21 @@ function renderScripts() {
 }
 
 async function selectScript(id) {
-    await db.from('message_scripts').update({ selected: false }).eq('operator_name', usuarioLogado);
-    await db.from('message_scripts').update({ selected: true }).eq('id', id);
+    await supabaseClient.from('message_scripts').update({ selected: false }).eq('operator_name', usuarioLogado);
+    await supabaseClient.from('message_scripts').update({ selected: true }).eq('id', id);
     await syncLoadAll();
 }
 
 async function removerScript(id){
     if(!confirm("Deseja deletar este script?")) return;
-    await db.from('message_scripts').delete().eq('id', id);
+    await supabaseClient.from('message_scripts').delete().eq('id', id);
     await syncLoadAll();
 }
 
 async function editarScript(id, nome, texto){
     document.getElementById("nomeScriptModal").value = nome;
     document.getElementById("textoScriptModal").value = texto;
-    await db.from('message_scripts').delete().eq('id', id);
+    await supabaseClient.from('message_scripts').delete().eq('id', id);
     await syncLoadAll();
     abrirModal("modalScript");
 }
@@ -910,7 +910,7 @@ async function proximo(){
             return alert("WhatsApp restrito.\nTempo restante: " + formatRemainingTime(Number(wa.restricted_until)));
         } else {
             wa.status = "ativo";
-            await db.from('whatsapp_accounts').update({ status: 'ativo', restricted_until: null }).eq('id', wa.id);
+            await supabaseClient.from('whatsapp_accounts').update({ status: 'ativo', restricted_until: null }).eq('id', wa.id);
         }
     }
 
@@ -925,14 +925,14 @@ async function proximo(){
     }
 
     // Atualiza contato para Enviado
-    await db.from('contacts_queue').update({ status: 'Enviado' }).eq('id', proximoContato.id);
+    await supabaseClient.from('contacts_queue').update({ status: 'Enviado' }).eq('id', proximoContato.id);
 
     // Abre a janela de disparo
     let url = "https://web.whatsapp.com/send?phone=" + proximoContato.tel + "&text=" + encodeURIComponent(textoMensagem);
     window.open(url, "_blank");
 
     // Incrementa contador de envios do chip
-    await db.from('whatsapp_accounts').update({ sent: wa.sent + 1 }).eq('id', wa.id);
+    await supabaseClient.from('whatsapp_accounts').update({ sent: wa.sent + 1 }).eq('id', wa.id);
 
     await syncLoadAll();
 }
@@ -945,7 +945,7 @@ setInterval(async () => {
     for (let w of whatsappAccounts) {
         if (w.status === "restrito" && w.restricted_until) {
             if (Date.now() >= Number(w.restricted_until)) {
-                await db.from('whatsapp_accounts').update({ status: 'ativo', restricted_until: null }).eq('id', w.id);
+                await supabaseClient.from('whatsapp_accounts').update({ status: 'ativo', restricted_until: null }).eq('id', w.id);
                 alterouSessao = true;
             }
         }
