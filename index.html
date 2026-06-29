@@ -401,7 +401,7 @@ hr {
 <div class="card">
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
     <h3 style="margin: 0;">📝 Mensagens & Scripts</h3>
-    <button class="blue" onclick="abrirModal('modalScript')" style="margin: 0; padding: 6px 12px; font-size: 12px;">+ Criar Novo Script</button>
+    <button class="blue" onclick="abrirModalScriptNovo()" style="margin: 0; padding: 6px 12px; font-size: 12px;">+ Criar Novo Script</button>
 </div>
 <hr style="margin: 10px 0;">
 <label class="small">Seus Scripts Salvos</label>
@@ -442,13 +442,14 @@ hr {
 
 <div id="modalScript" class="modal-overlay hidden">
     <div class="modal-content">
-        <h3>Criar Novo Script</h3>
+        <h3 id="tituloScriptModal">Criar Novo Script</h3>
+        <input type="hidden" id="editScriptId" value="">
         
         <label class="small">Título / Identificação do Script</label>
         <input id="nomeScriptModal" placeholder="Ex: Cobrança Atraso 5 dias" style="margin-top:4px; margin-bottom:12px;">
         
         <label class="small">Mensagem de texto (Dica: Use "{nome} tudo bem?" para encaixar com ou sem nome)</label>
-        <textarea id="textoScriptModal" rows="5" placeholder="Olá {nome} tudo bem? Vimos aqui que..." style="margin-top:4px;"></textarea>
+        <textarea id="textoScriptModal" rows="5" placeholder="Olá {nome} tudo bem? Vimos aqui que..." style="margin-top:4px Papel;"></textarea>
         
         <div class="flex-group" style="margin-top: 20px;">
             <button class="gray" onclick="fecharModal('modalScript')" style="flex:1;">Cancelar</button>
@@ -504,6 +505,8 @@ hr {
     </div>
 </div>
 
+<iframe name="whatsapp_window" style="display:none; width:0; height:0; border:none;"></iframe>
+
 <script>
 // CONFIGURAÇÕES DO SUPABASE
 const SUPABASE_URL = "https://kgidkxaqvgcqiqwqxvut.supabase.co"; 
@@ -516,6 +519,7 @@ let whatsappAccounts = [];
 let listaScripts = [];
 let contaEditandoIndex = null;
 let usuarioLogado = "";
+let abaWhatsAppReferencia = null; // Guardará o canal de comunicação direto com a aba externa
 
 function formatRemainingTime(timestamp){
     const diff = timestamp - Date.now();
@@ -583,6 +587,7 @@ function logout() {
     whatsappAccounts = [];
     contatos = [];
     listaScripts = [];
+    abaWhatsAppReferencia = null;
     document.getElementById("app").classList.add("hidden");
     document.getElementById("login").classList.remove("hidden");
 }
@@ -723,7 +728,7 @@ function abrirEditarModal(i) {
                 inputTempo = inputTempo.trim().toLowerCase().replace(/\s+/g, '');
                 let milissegundosTotais = 0;
                 let encontrouFormato = false;
-                let matchHoras = inputTempo.match(/(\d+(?:\.\d+)?)h/);
+                let matchHoras = inputTempo.match(/(\d+(?:\.\d+)?)hcard/);
                 if(matchHoras) { milissegundosTotais += parseFloat(matchHoras[1]) * 3600000; encontrouFormato = true; }
                 let matchMinutos = inputTempo.match(/(\d+(?:\.\d+)?)m/);
                 if(matchMinutos) { milissegundosTotais += parseFloat(matchMinutos[1]) * 60000; encontrouFormato = true; }
@@ -764,7 +769,7 @@ async function removeWA(id){
     await syncLoadAll();
 }
 
-/* GERENCIAMENTO DE FILA DE CLIENTES - SUPORTE A NÚMEROS COM OU SEM NOME */
+/* GERENCIAMENTO DE FILA DE CONTATOS */
 async function salvarContatos(){
     let scriptIdx = document.getElementById("modalSelectScriptDefinido").value;
     if(scriptIdx === "") return alert("Você precisa selecionar um script válido para vincular a estes números.");
@@ -783,13 +788,10 @@ async function salvarContatos(){
         let textoCustomizado = scriptVinculado.texto;
 
         if(nomeCliente) {
-            // Se tiver nome, faz a troca normal
             textoCustomizado = textoCustomizado.replace(/\{nome\}/gi, nomeCliente);
         } else {
-            // Se NÃO tiver nome, remove a tag {nome} e ajusta o "Olá" para "Olá,"
             textoCustomizado = textoCustomizado.replace(/\{nome\}/gi, "");
             textoCustomizado = textoCustomizado.replace(/Olá\s+/gi, "Olá, ");
-            // Remove espaços duplos remanescentes
             textoCustomizado = textoCustomizado.replace(/\s{2,}/g, " ");
         }
 
@@ -845,23 +847,36 @@ function renderContatos(){
     document.getElementById("lista").innerHTML = html;
 }
 
-/* GERENCIAMENTO DE SCRIPTS VIA BANCO */
-async function salvarScript(){
-    let nome = document.getElementById("nomeScriptModal").value.trim();
-    let texto = document.getElementById("textoScriptModal").value.trim();
-    if(!nome || !texto) return alert("Preencha todos os campos do script");
-
-    let isFirst = listaScripts.length === 0;
-
-    await supabaseClient.from('message_scripts').insert([{
-        operator_name: usuarioLogado,
-        nome: nome,
-        texto: texto,
-        selected: isFirst
-    }]);
-    
+/* GERENCIAMENTO DE SCRIPTS (FIXED EDIT LOGIC) */
+function abrirModalScriptNovo() {
+    document.getElementById("tituloScriptModal").innerText = "Criar Novo Script";
+    document.getElementById("editScriptId").value = ""; // Limpa ID indicando criação
     document.getElementById("nomeScriptModal").value = "";
     document.getElementById("textoScriptModal").value = "";
+    abrirModal("modalScript");
+}
+
+async function salvarScript(){
+    let idExistente = document.getElementById("editScriptId").value;
+    let nome = document.getElementById("nomeScriptModal").value.trim();
+    let texto = document.getElementById("textoScriptModal").value.trim();
+    
+    if(!nome || !texto) return alert("Preencha todos os campos do script");
+
+    if (idExistente) {
+        // Modo Edição: Atualiza direto no ID sem deletar nada
+        await supabaseClient.from('message_scripts').update({ nome: nome, texto: texto }).eq('id', idExistente);
+    } else {
+        // Modo Criação: Insere um novo registro
+        let isFirst = listaScripts.length === 0;
+        await supabaseClient.from('message_scripts').insert([{
+            operator_name: usuarioLogado,
+            nome: nome,
+            texto: texto,
+            selected: isFirst
+        }]);
+    }
+    
     fecharModal("modalScript");
     await syncLoadAll();
 }
@@ -876,6 +891,8 @@ function renderScripts() {
     }
 
     listaScripts.forEach((s) => {
+        // Envelopamento seguro de string para evitar erros no HTML onClick
+        let textoEscapado = encodeURIComponent(s.texto);
         html += `
         <div class="row" style="padding: 8px 6px;">
             <div style="display: flex; align-items: center; flex: 1; cursor: pointer;" onclick="selectScript(${s.id})">
@@ -883,7 +900,7 @@ function renderScripts() {
                 <span style="font-weight: 600; color: ${s.selected ? 'var(--blue)' : 'var(--text-main)'};">${s.nome}</span>
             </div>
             <div class="action-buttons">
-                <button onclick="editarScript(${s.id}, '${s.nome}', '${s.texto.replace(/'/g, "\\'")}')" class="btn-icon" style="color:#3b82f6;">📝</button>
+                <button onclick="prepararEdicaoScript(${s.id}, '${s.nome.replace(/'/g, "\\'")}', '${textoEscapado}')" class="btn-icon" style="color:#3b82f6;">📝</button>
                 <button onclick="removerScript(${s.id})" class="btn-icon" style="color:#ef4444;">✕</button>
             </div>
         </div>`;
@@ -891,6 +908,14 @@ function renderScripts() {
 
     document.getElementById("scriptsContainerList").innerHTML = html;
     previewScript();
+}
+
+function prepararEdicaoScript(id, nome, textoCodificado) {
+    document.getElementById("tituloScriptModal").innerText = "Editar Script";
+    document.getElementById("editScriptId").value = id; // Define o ID para indicar atualização
+    document.getElementById("nomeScriptModal").value = nome;
+    document.getElementById("textoScriptModal").value = decodeURIComponent(textoCodificado);
+    abrirModal("modalScript");
 }
 
 async function selectScript(id) {
@@ -905,20 +930,12 @@ async function removerScript(id){
     await syncLoadAll();
 }
 
-async function editarScript(id, nome, texto){
-    document.getElementById("nomeScriptModal").value = nome;
-    document.getElementById("textoScriptModal").value = texto;
-    await supabaseClient.from('message_scripts').delete().eq('id', id);
-    await syncLoadAll();
-    abrirModal("modalScript");
-}
-
 function previewScript(){
     let scriptAtivo = listaScripts.find(x => x.selected);
     document.getElementById("preview").innerText = scriptAtivo ? scriptAtivo.texto : "Nenhum script selecionado.";
 }
 
-/* PROXIMO ACIONAMENTO REUTILIZANDO A MESMA ABA (whatsapp_window) */
+/* PROXIMO ACIONAMENTO - CONTROLE AVANÇADO DE JANELA ÚNICA */
 async function proximo(){
     let wa = whatsappAccounts.find(x => x.selected);
     if(!wa) return alert("Selecione uma conta de WhatsApp de envio.");
@@ -943,12 +960,20 @@ async function proximo(){
         textoMensagem = scriptGeral.texto;
     }
 
-    // Atualiza contato para Enviado
+    // Atualiza contato para Enviado no banco
     await supabaseClient.from('contacts_queue').update({ status: 'Enviado' }).eq('id', proximoContato.id);
 
-    // Abre a janela de disparo usando o nome fixo de aba "whatsapp_window"
-    let url = "https://web.whatsapp.com/send?phone=" + proximoContato.tel + "&text=" + encodeURIComponent(textoMensagem);
-    window.open(url, "whatsapp_window");
+    // ESTRATÉGIA ANTI-MÚLTIPLAS ABAS:
+    // Se a referência à aba ainda não existe ou foi fechada, cria a aba fixa pela primeira vez.
+    let urlDisparo = "https://web.whatsapp.com/send?phone=" + proximoContato.tel + "&text=" + encodeURIComponent(textoMensagem);
+    
+    if (!abaWhatsAppReferencia || abaWhatsAppReferencia.closed) {
+        abaWhatsAppReferencia = window.open(urlDisparo, "whatsapp_janela_unica");
+    } else {
+        // Se a aba já existe, nós atualizamos o link dela diretamente via script de forma forçada.
+        abaWhatsAppReferencia.location.href = urlDisparo;
+        abaWhatsAppReferencia.focus(); // Traz a aba para frente se o navegador permitir
+    }
 
     // Incrementa contador de envios do chip
     await supabaseClient.from('whatsapp_accounts').update({ sent: wa.sent + 1 }).eq('id', wa.id);
@@ -956,7 +981,7 @@ async function proximo(){
     await syncLoadAll();
 }
 
-// TIMERS DE ATUALIZAÇÃO SÍNCROMA EM SEGUNDO PLANO
+// TIMERS DE ATUALIZAÇÃO EM SEGUNDO PLANO
 setInterval(async () => {
     if (!usuarioLogado) return; 
     let alterouSessao = false;
