@@ -352,7 +352,11 @@ hr {
         <span style="width: 8px; height: 8px; background: #10b981; border-radius: 50%;"></span>
         <span>Operador: <strong id="lblUsuario" style="color: var(--primary);">---</strong></span>
         <span style="color: var(--border-color)">|</span>
-        <a href="#" onclick="logout()" style="color: var(--red); font-size: 12px; text-decoration: none; font-weight: 600;">Sair</a>
+        <a href="#" onclick="abrirModal('modalJogo')" style="color: var(--blue); font-size: 12px; text-decoration: none; font-weight: 600; margin-right: 5px;">🎮 Jogar contra IA</a>
+        <span style="color: var(--border-color)">|</span>
+        <a href="#" onclick="abrirModal('modalMusica')" style="color: var(--orange); font-size: 12px; text-decoration: none; font-weight: 600; margin-right: 5px; margin-left: 5px;">🎵 Player de Música</a>
+        <span style="color: var(--border-color)">|</span>
+        <a href="#" onclick="logout()" style="color: var(--red); font-size: 12px; text-decoration: none; font-weight: 600; margin-left: 5px;">Sair</a>
     </div>
 </div>
 
@@ -366,7 +370,7 @@ hr {
     <div style="flex: 1; min-width: 130px;">
         <label class="small">Função</label>
         <select id="waRole" style="margin-top:4px;">
-            <option value="preventivo">Preventivo</option>
+            <option value="preventive">Preventivo</option>
             <option value="acoes">Ações</option>
             <option value="reserva">Reserva</option>
         </select>
@@ -410,6 +414,14 @@ hr {
 <div id="preview"></div>
 </div>
 
+</div>
+
+<div id="containerMiniPlayer" class="card hidden" style="margin-top: 25px; display: flex; flex-direction: column; align-items: center;">
+    <div style="display: flex; justify-content: space-between; width: 100%; align-items: center; margin-bottom: 10px;">
+        <h3 style="margin:0;">🎵 Tocando Agora</h3>
+        <button onclick="fecharMiniPlayer()" class="btn-icon" style="color: var(--red); font-size: 16px;">✕</button>
+    </div>
+    <div id="wrapperIframe" style="width: 100%; border-radius: 12px; overflow: hidden; background: #000;"></div>
 </div>
 
 <div class="card" style="margin-top:25px; text-align: center; border: 1px solid rgba(16, 185, 129, 0.2);">
@@ -505,6 +517,40 @@ hr {
     </div>
 </div>
 
+<div id="modalMusica" class="modal-overlay hidden">
+    <div class="modal-content">
+        <h3>🎵 Colocar Música de Fundo</h3>
+        <label class="small">Cole o link completo de qualquer vídeo/música do YouTube:</label>
+        <input id="inputLinkMusica" placeholder="https://www.youtube.com/watch?v=..." style="margin-top:4px; margin-bottom:12px;">
+        <div class="flex-group">
+            <button class="gray" onclick="fecharModal('modalMusica')" style="flex:1;">Cancelar</button>
+            <button class="green" onclick="carregarMusica()" style="flex:1;">Tocar Música</button>
+        </div>
+    </div>
+</div>
+
+<div id="modalJogo" class="modal-overlay hidden">
+    <div class="modal-content" style="width: 320px; text-align: center;">
+        <h3>🎮 Jogo contra IA</h3>
+        <div id="tabuleiro" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 15px 0;">
+            <div class="quadrado" onclick="jogada(0)" style="background: var(--bg-input); height: 70px; display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: bold; cursor: pointer; border-radius: 8px; border: 1px solid var(--border-color);"></div>
+            <div class="quadrado" onclick="jogada(1)" style="background: var(--bg-input); height: 70px; display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: bold; cursor: pointer; border-radius: 8px; border: 1px solid var(--border-color);"></div>
+            <div class="quadrado" onclick="jogada(2)" style="background: var(--bg-input); height: 70px; display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: bold; cursor: pointer; border-radius: 8px; border: 1px solid var(--border-color);"></div>
+            <div class="quadrado" onclick="jogada(3)" style="background: var(--bg-input); height: 70px; display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: bold; cursor: pointer; border-radius: 8px; border: 1px solid var(--border-color);"></div>
+            <div class="quadrado" onclick="jogada(4)" style="background: var(--bg-input); height: 70px; display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: bold; cursor: pointer; border-radius: 8px; border: 1px solid var(--border-color);"></div>
+            <div class="quadrado" onclick="jogada(5)" style="background: var(--bg-input); height: 70px; display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: bold; cursor: pointer; border-radius: 8px; border: 1px solid var(--border-color);"></div>
+            <div class="quadrado" onclick="jogada(6)" style="background: var(--bg-input); height: 70px; display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: bold; cursor: pointer; border-radius: 8px; border: 1px solid var(--border-color);"></div>
+            <div class="quadrado" onclick="jogada(7)" style="background: var(--bg-input); height: 70px; display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: bold; cursor: pointer; border-radius: 8px; border: 1px solid var(--border-color);"></div>
+            <div class="quadrado" onclick="jogada(8)" style="background: var(--bg-input); height: 70px; display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: bold; cursor: pointer; border-radius: 8px; border: 1px solid var(--border-color);"></div>
+        </div>
+        <div id="statusJogo" class="small" style="margin-bottom: 15px; font-weight: 600; color: var(--primary);">Sua vez! (Você é o X)</div>
+        <div class="flex-group">
+            <button class="gray" onclick="fecharModal('modalJogo')" style="flex:1;">Fechar</button>
+            <button class="blue" onclick="resetJogo()" style="flex:1;">Reiniciar</button>
+        </div>
+    </div>
+</div>
+
 <script>
 // CONFIGURAÇÕES DO SUPABASE
 const SUPABASE_URL = "https://kgidkxaqvgcqiqwqxvut.supabase.co"; 
@@ -586,6 +632,7 @@ function logout() {
     contatos = [];
     listaScripts = [];
     abaWhatsAppReferencia = null;
+    fecharMiniPlayer();
     document.getElementById("app").classList.add("hidden");
     document.getElementById("login").classList.remove("hidden");
 }
@@ -961,8 +1008,6 @@ async function proximo(){
     let urlDisparo = "https://web.whatsapp.com/send?phone=" + proximoContato.tel + "&text=" + encodeURIComponent(textoMensagem);
     
     // CÓDIGO DA PÁGINA INTERMEDIÁRIA EM BRANCO (Mesa de Domínio Local)
-    // Esse script injetado faz a aba recém-criada redirecionar para o WhatsApp. 
-    // Como a aba nasce com o mesmo domínio do seu sistema, nós podemos alterar o link dela à vontade depois!
     let codigoRedirecionador = `
         <html>
         <head><title>Direcionando...</title></head>
@@ -976,10 +1021,8 @@ async function proximo(){
     let urlBlobInterna = URL.createObjectURL(blobHtml);
 
     if (!abaWhatsAppReferencia || abaWhatsAppReferencia.closed) {
-        // Primeira vez: Abre a aba baseada no nosso próprio domínio (Blob)
         abaWhatsAppReferencia = window.open(urlBlobInterna, "whatsapp_janela_unica");
     } else {
-        // Das próximas vezes: Como a aba pertence ao nosso domínio, o navegador PERMITE mudar o link dela sem abrir novas guias!
         abaWhatsAppReferencia.location.href = urlBlobInterna;
         abaWhatsAppReferencia.focus();
     }
@@ -990,7 +1033,113 @@ async function proximo(){
     await syncLoadAll();
 }
 
-// TIMERS DE ATUALIZAÇÃO EM SEGUNDO PLANO
+/* LÓGICA DE EXTRAÇÃO E REPRODUÇÃO DE MÚSICA */
+function carregarMusica() {
+    let inputUrl = document.getElementById("inputLinkMusica").value.trim();
+    if (!inputUrl) return alert("Por favor, cole um link válido do YouTube.");
+
+    let videoId = "";
+    // Regex para pegar ID do youtube tradicional ou shorts/share
+    let regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+    let match = inputUrl.match(regExp);
+
+    if (match && match[2].length == 11) {
+        videoId = match[2];
+    } else {
+        // Fallback rápido se colarem apenas o ID
+        if(inputUrl.length === 11) {
+            videoId = inputUrl;
+        } else {
+            return alert("Não consegui extrair o ID desta música. Verifique se o link está correto!");
+        }
+    }
+
+    // Exibe o mini-player e injeta o iframe
+    document.getElementById("containerMiniPlayer").classList.remove("hidden");
+    document.getElementById("wrapperIframe").innerHTML = `
+        <iframe width="100%" height="80" 
+            src="https://www.youtube.com/embed/${videoId}?autoplay=1&controls=1" 
+            frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen>
+        </iframe>
+    `;
+
+    document.getElementById("inputLinkMusica").value = "";
+    fecharModal("modalMusica");
+}
+
+function fecharMiniPlayer() {
+    document.getElementById("containerMiniPlayer").classList.add("hidden");
+    document.getElementById("wrapperIframe").innerHTML = "";
+}
+
+/* LÓGICA DO JOGO DA VELHA CONTRA A IA */
+let jogoAtivo = true;
+let jogadorAtual = "X"; 
+let tabuleiroSessao = ["", "", "", "", "", "", "", "", ""];
+const vitoriasDisponiveis = [[0,1,2], [3,4,5], [6,7,8], [0,3,6], [1,4,7], [2,5,8], [0,4,8], [2,4,6]];
+
+function jogada(index) {
+    if (tabuleiroSessao[index] !== "" || !jogoAtivo || jogadorAtual !== "X") return;
+    executarMovimento(index, "X");
+    if (jogoAtivo) {
+        document.getElementById("statusJogo").innerText = "🤖 IA pensando...";
+        setTimeout(jogadaIA, 400);
+    }
+}
+
+function executarMovimento(index, simbolo) {
+    tabuleiroSessao[index] = simbolo;
+    let quadrados = document.querySelectorAll(".quadrado");
+    quadrados[index].innerText = simbolo;
+    quadrados[index].style.color = simbolo === "X" ? "var(--blue)" : "var(--red)";
+    
+    if (checarVitoria(simbolo)) {
+        document.getElementById("statusJogo").innerText = simbolo === "X" ? "🎉 Você venceu!" : "🤖 A IA venceu!";
+        jogoAtivo = false;
+        return;
+    }
+    if (!tabuleiroSessao.includes("")) {
+        document.getElementById("statusJogo").innerText = "🤝 Empate!";
+        jogoAtivo = false;
+        return;
+    }
+    jogadorAtual = simbolo === "X" ? "O" : "X";
+}
+
+function jogadaIA() {
+    if (!jogoAtivo) return;
+    // 1. IA tenta ganhar ou 2. Bloquear você
+    for (let simbi of ["O", "X"]) {
+        for (let combo of vitoriasDisponiveis) {
+            let preenchidos = combo.map(i => tabuleiroSessao[i]);
+            if (preenchidos.filter(s => s === simbi).length === 2 && preenchidos.includes("")) {
+                let r = combo[preenchidos.indexOf("")];
+                executarMovimento(r, "O");
+                if(jogoAtivo) document.getElementById("statusJogo").innerText = "Sua vez! (Você é o X)";
+                return;
+            }
+        }
+    }
+    // 3. Escolhe casa vazia aleatória
+    let vazios = tabuleiroSessao.map((val, idx) => val === "" ? idx : null).filter(val => val !== null);
+    let escolhaAleatoria = vazios[Math.floor(Math.random() * vazios.length)];
+    executarMovimento(escolhaAleatoria, "O");
+    if(jogoAtivo) document.getElementById("statusJogo").innerText = "Sua vez! (Você é o X)";
+}
+
+function checarVitoria(simbolo) {
+    return vitoriasDisponiveis.some(combo => combo.every(i => tabuleiroSessao[i] === simbolo));
+}
+
+function resetJogo() {
+    tabuleiroSessao = ["", "", "", "", "", "", "", "", ""];
+    jogoAtivo = true;
+    jogadorAtual = "X";
+    document.getElementById("statusJogo").innerText = "Sua vez! (Você é o X)";
+    document.querySelectorAll(".quadrado").forEach(q => q.innerText = "");
+}
+
+/* TIMERS DE ATUALIZAÇÃO EM SEGUNDO PLANO */
 setInterval(async () => {
     if (!usuarioLogado) return; 
     let alterouSessao = false;
