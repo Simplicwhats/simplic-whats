@@ -430,8 +430,8 @@ hr {
         <select id="modalSelectScriptDefinido" style="margin-top:4px; margin-bottom:12px;">
             </select>
 
-        <label class="small">Cole os números da lista (Formato: Numero;Nome - um por linha)</label>
-        <textarea id="telefonesInputModal" rows="6" placeholder="5511999999999;João&#10;5511888888888;Maria" style="margin-top:4px;"></textarea>
+        <label class="small">Cole a lista (Formatos aceitos: 5511999999999;Nome ou apenas 5511999999999)</label>
+        <textarea id="telefonesInputModal" rows="6" placeholder="5511999999999;João&#10;5511888888888" style="margin-top:4px;"></textarea>
         
         <div class="flex-group" style="margin-top: 20px;">
             <button class="gray" onclick="fecharModal('modalContatos')" style="flex:1;">Cancelar</button>
@@ -447,8 +447,8 @@ hr {
         <label class="small">Título / Identificação do Script</label>
         <input id="nomeScriptModal" placeholder="Ex: Cobrança Atraso 5 dias" style="margin-top:4px; margin-bottom:12px;">
         
-        <label class="small">Mensagem de texto (use {nome} para personalizar)</label>
-        <textarea id="textoScriptModal" rows="5" placeholder="Olá {nome}, tudo bem? Vimos aqui que..." style="margin-top:4px;"></textarea>
+        <label class="small">Mensagem de texto (Dica: Use "{nome} tudo bem?" para encaixar com ou sem nome)</label>
+        <textarea id="textoScriptModal" rows="5" placeholder="Olá {nome} tudo bem? Vimos aqui que..." style="margin-top:4px;"></textarea>
         
         <div class="flex-group" style="margin-top: 20px;">
             <button class="gray" onclick="fecharModal('modalScript')" style="flex:1;">Cancelar</button>
@@ -764,7 +764,7 @@ async function removeWA(id){
     await syncLoadAll();
 }
 
-/* GERENCIAMENTO DE FILA DE CLIENTES COM TRATAMENTO DE VARIÁVEIS ({nome}) */
+/* GERENCIAMENTO DE FILA DE CLIENTES - SUPORTE A NÚMEROS COM OU SEM NOME */
 async function salvarContatos(){
     let scriptIdx = document.getElementById("modalSelectScriptDefinido").value;
     if(scriptIdx === "") return alert("Você precisa selecionar um script válido para vincular a estes números.");
@@ -776,18 +776,21 @@ async function salvarContatos(){
     if(listagemNovos.length === 0) return alert("Insira pelo menos um número de telefone.");
 
     let packageData = listagemNovos.map(linha => {
-        // Separa número e nome pelo caractere ";"
         let partes = linha.split(";");
         let numero = partes[0].trim();
         let nomeCliente = partes[1] ? partes[1].trim() : "";
 
         let textoCustomizado = scriptVinculado.texto;
 
-        // Se houver nome, substitui o padrão {nome}, caso contrário insere uma saudação curta
         if(nomeCliente) {
+            // Se tiver nome, faz a troca normal
             textoCustomizado = textoCustomizado.replace(/\{nome\}/gi, nomeCliente);
         } else {
-            textoCustomizado = textoCustomizado.replace(/\{nome\}/gi, "tudo bem?");
+            // Se NÃO tiver nome, remove a tag {nome} e ajusta o "Olá" para "Olá,"
+            textoCustomizado = textoCustomizado.replace(/\{nome\}/gi, "");
+            textoCustomizado = textoCustomizado.replace(/Olá\s+/gi, "Olá, ");
+            // Remove espaços duplos remanescentes
+            textoCustomizado = textoCustomizado.replace(/\s{2,}/g, " ");
         }
 
         return {
@@ -943,7 +946,7 @@ async function proximo(){
     // Atualiza contato para Enviado
     await supabaseClient.from('contacts_queue').update({ status: 'Enviado' }).eq('id', proximoContato.id);
 
-    // Abre a janela de disparo usando um identificador fixo para manter a mesma aba aberta
+    // Abre a janela de disparo usando o nome fixo de aba "whatsapp_window"
     let url = "https://web.whatsapp.com/send?phone=" + proximoContato.tel + "&text=" + encodeURIComponent(textoMensagem);
     window.open(url, "whatsapp_window");
 
