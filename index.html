@@ -430,8 +430,8 @@ hr {
         <select id="modalSelectScriptDefinido" style="margin-top:4px; margin-bottom:12px;">
             </select>
 
-        <label class="small">Cole os números da lista (um por linha)</label>
-        <textarea id="telefonesInputModal" rows="6" placeholder="5511999999999&#10;5511888888888" style="margin-top:4px;"></textarea>
+        <label class="small">Cole os números da lista (Formato: Numero;Nome - um por linha)</label>
+        <textarea id="telefonesInputModal" rows="6" placeholder="5511999999999;João&#10;5511888888888;Maria" style="margin-top:4px;"></textarea>
         
         <div class="flex-group" style="margin-top: 20px;">
             <button class="gray" onclick="fecharModal('modalContatos')" style="flex:1;">Cancelar</button>
@@ -447,8 +447,8 @@ hr {
         <label class="small">Título / Identificação do Script</label>
         <input id="nomeScriptModal" placeholder="Ex: Cobrança Atraso 5 dias" style="margin-top:4px; margin-bottom:12px;">
         
-        <label class="small">Mensagem de texto</label>
-        <textarea id="textoScriptModal" rows="5" placeholder="Olá, tudo bem? Vimos aqui que..." style="margin-top:4px;"></textarea>
+        <label class="small">Mensagem de texto (use {nome} para personalizar)</label>
+        <textarea id="textoScriptModal" rows="5" placeholder="Olá {nome}, tudo bem? Vimos aqui que..." style="margin-top:4px;"></textarea>
         
         <div class="flex-group" style="margin-top: 20px;">
             <button class="gray" onclick="fecharModal('modalScript')" style="flex:1;">Cancelar</button>
@@ -505,11 +505,10 @@ hr {
 </div>
 
 <script>
-// CONFIGURAÇÕES DO SUPABASE (Corrigidas e unificadas)
+// CONFIGURAÇÕES DO SUPABASE
 const SUPABASE_URL = "https://kgidkxaqvgcqiqwqxvut.supabase.co"; 
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtnaWRreGFxdmdjcWlxd3F4dnV0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0ODc0MzAsImV4cCI6MjA5ODA2MzQzMH0.DLQoO8_q_QeW-a084ZDCFRc0OIeuEDaYpkUg2tSCB0E";
 
-// Conexão blindada usando a nova URL
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let contatos = [];
@@ -593,15 +592,12 @@ async function syncLoadAll() {
     if(!usuarioLogado) return;
 
     try {
-        // 1. Carregar contas WA
         let resWa = await supabaseClient.from('whatsapp_accounts').select('*').eq('operator_name', usuarioLogado).order('id', { ascending: true });
         whatsappAccounts = resWa.data || [];
 
-        // 2. Carregar Scripts
         let resScr = await supabaseClient.from('message_scripts').select('*').eq('operator_name', usuarioLogado).order('id', { ascending: true });
         listaScripts = resScr.data || [];
 
-        // 3. Carregar Fila de Contatos
         let resCon = await supabaseClient.from('contacts_queue').select('*').eq('operator_name', usuarioLogado).order('id', { ascending: true });
         contatos = resCon.data || [];
 
@@ -768,7 +764,7 @@ async function removeWA(id){
     await syncLoadAll();
 }
 
-/* GERENCIAMENTO DE FILA DE CLIENTES VIA BANCO */
+/* GERENCIAMENTO DE FILA DE CLIENTES COM TRATAMENTO DE VARIÁVEIS ({nome}) */
 async function salvarContatos(){
     let scriptIdx = document.getElementById("modalSelectScriptDefinido").value;
     if(scriptIdx === "") return alert("Você precisa selecionar um script válido para vincular a estes números.");
@@ -779,13 +775,29 @@ async function salvarContatos(){
 
     if(listagemNovos.length === 0) return alert("Insira pelo menos um número de telefone.");
 
-    let packageData = listagemNovos.map(num => ({
-        operator_name: usuarioLogado,
-        tel: num,
-        status: "Pendente",
-        script_texto: scriptVinculado.texto,
-        script_nome: scriptVinculado.nome
-    }));
+    let packageData = listagemNovos.map(linha => {
+        // Separa número e nome pelo caractere ";"
+        let partes = linha.split(";");
+        let numero = partes[0].trim();
+        let nomeCliente = partes[1] ? partes[1].trim() : "";
+
+        let textoCustomizado = scriptVinculado.texto;
+
+        // Se houver nome, substitui o padrão {nome}, caso contrário insere uma saudação curta
+        if(nomeCliente) {
+            textoCustomizado = textoCustomizado.replace(/\{nome\}/gi, nomeCliente);
+        } else {
+            textoCustomizado = textoCustomizado.replace(/\{nome\}/gi, "tudo bem?");
+        }
+
+        return {
+            operator_name: usuarioLogado,
+            tel: numero,
+            status: "Pendente",
+            script_texto: textoCustomizado, 
+            script_nome: scriptVinculado.nome
+        };
+    });
 
     await supabaseClient.from('contacts_queue').insert(packageData);
 
@@ -903,7 +915,7 @@ function previewScript(){
     document.getElementById("preview").innerText = scriptAtivo ? scriptAtivo.texto : "Nenhum script selecionado.";
 }
 
-/* PROXIMO ACIONAMENTO CONECTADO AO SUPABASE */
+/* PROXIMO ACIONAMENTO REUTILIZANDO A MESMA ABA (whatsapp_window) */
 async function proximo(){
     let wa = whatsappAccounts.find(x => x.selected);
     if(!wa) return alert("Selecione uma conta de WhatsApp de envio.");
@@ -931,9 +943,9 @@ async function proximo(){
     // Atualiza contato para Enviado
     await supabaseClient.from('contacts_queue').update({ status: 'Enviado' }).eq('id', proximoContato.id);
 
-    // Abre a janela de disparo
+    // Abre a janela de disparo usando um identificador fixo para manter a mesma aba aberta
     let url = "https://web.whatsapp.com/send?phone=" + proximoContato.tel + "&text=" + encodeURIComponent(textoMensagem);
-    window.open(url, "_blank");
+    window.open(url, "whatsapp_window");
 
     // Incrementa contador de envios do chip
     await supabaseClient.from('whatsapp_accounts').update({ sent: wa.sent + 1 }).eq('id', wa.id);
@@ -958,7 +970,6 @@ setInterval(async () => {
     if (alterouSessao) {
         await syncLoadAll();
     } else {
-        // Apenas repinta contagem regressiva visual sem bater no banco de dados a cada 1s
         whatsappAccounts.forEach((w, i) => {
             let elementoBadge = document.getElementById(`badge-status-${i}`);
             if (elementoBadge && w.status === "restrito" && w.restricted_until) {
