@@ -449,7 +449,7 @@ hr {
         <input id="nomeScriptModal" placeholder="Ex: Cobrança Atraso 5 dias" style="margin-top:4px; margin-bottom:12px;">
         
         <label class="small">Mensagem de texto (Dica: Use "{nome} tudo bem?" para encaixar com ou sem nome)</label>
-        <textarea id="textoScriptModal" rows="5" placeholder="Olá {nome} tudo bem? Vimos aqui que..." style="margin-top:4px Papel;"></textarea>
+        <textarea id="textoScriptModal" rows="5" placeholder="Olá {nome} tudo bem? Vimos aqui que..." style="margin-top:4px;"></textarea>
         
         <div class="flex-group" style="margin-top: 20px;">
             <button class="gray" onclick="fecharModal('modalScript')" style="flex:1;">Cancelar</button>
@@ -505,12 +505,10 @@ hr {
     </div>
 </div>
 
-<iframe name="whatsapp_window" style="display:none; width:0; height:0; border:none;"></iframe>
-
 <script>
 // CONFIGURAÇÕES DO SUPABASE
 const SUPABASE_URL = "https://kgidkxaqvgcqiqwqxvut.supabase.co"; 
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtnaWRreGFxdmdjcWlxd3F4dnV0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0ODc0MzAsImV4cCI6MjA5ODA2MzQzMH0.DLQoO8_q_QeW-a084ZDCFRc0OIeuEDaYpkUg2tSCB0E";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtnaWRreGFxdmdjcWlxd3F4dnV0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI4ODc0MzAsImV4cCI6MjA5ODA2MzQzMH0.DLQoO8_q_QeW-a084ZDCFRc0OIeuEDaYpkUg2tSCB0E";
 
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -519,7 +517,7 @@ let whatsappAccounts = [];
 let listaScripts = [];
 let contaEditandoIndex = null;
 let usuarioLogado = "";
-let abaWhatsAppReferencia = null; // Guardará o canal de comunicação direto com a aba externa
+let abaWhatsAppReferencia = null; 
 
 function formatRemainingTime(timestamp){
     const diff = timestamp - Date.now();
@@ -728,7 +726,7 @@ function abrirEditarModal(i) {
                 inputTempo = inputTempo.trim().toLowerCase().replace(/\s+/g, '');
                 let milissegundosTotais = 0;
                 let encontrouFormato = false;
-                let matchHoras = inputTempo.match(/(\d+(?:\.\d+)?)hcard/);
+                let matchHoras = inputTempo.match(/(\d+(?:\.\d+)?)h/);
                 if(matchHoras) { milissegundosTotais += parseFloat(matchHoras[1]) * 3600000; encontrouFormato = true; }
                 let matchMinutos = inputTempo.match(/(\d+(?:\.\d+)?)m/);
                 if(matchMinutos) { milissegundosTotais += parseFloat(matchMinutos[1]) * 60000; encontrouFormato = true; }
@@ -847,10 +845,10 @@ function renderContatos(){
     document.getElementById("lista").innerHTML = html;
 }
 
-/* GERENCIAMENTO DE SCRIPTS (FIXED EDIT LOGIC) */
+/* GERENCIAMENTO DE SCRIPTS */
 function abrirModalScriptNovo() {
     document.getElementById("tituloScriptModal").innerText = "Criar Novo Script";
-    document.getElementById("editScriptId").value = ""; // Limpa ID indicando criação
+    document.getElementById("editScriptId").value = ""; 
     document.getElementById("nomeScriptModal").value = "";
     document.getElementById("textoScriptModal").value = "";
     abrirModal("modalScript");
@@ -864,10 +862,8 @@ async function salvarScript(){
     if(!nome || !texto) return alert("Preencha todos os campos do script");
 
     if (idExistente) {
-        // Modo Edição: Atualiza direto no ID sem deletar nada
         await supabaseClient.from('message_scripts').update({ nome: nome, texto: texto }).eq('id', idExistente);
     } else {
-        // Modo Criação: Insere um novo registro
         let isFirst = listaScripts.length === 0;
         await supabaseClient.from('message_scripts').insert([{
             operator_name: usuarioLogado,
@@ -891,7 +887,6 @@ function renderScripts() {
     }
 
     listaScripts.forEach((s) => {
-        // Envelopamento seguro de string para evitar erros no HTML onClick
         let textoEscapado = encodeURIComponent(s.texto);
         html += `
         <div class="row" style="padding: 8px 6px;">
@@ -912,7 +907,7 @@ function renderScripts() {
 
 function prepararEdicaoScript(id, nome, textoCodificado) {
     document.getElementById("tituloScriptModal").innerText = "Editar Script";
-    document.getElementById("editScriptId").value = id; // Define o ID para indicar atualização
+    document.getElementById("editScriptId").value = id; 
     document.getElementById("nomeScriptModal").value = nome;
     document.getElementById("textoScriptModal").value = decodeURIComponent(textoCodificado);
     abrirModal("modalScript");
@@ -935,7 +930,7 @@ function previewScript(){
     document.getElementById("preview").innerText = scriptAtivo ? scriptAtivo.texto : "Nenhum script selecionado.";
 }
 
-/* PROXIMO ACIONAMENTO - CONTROLE AVANÇADO DE JANELA ÚNICA */
+/* PROXIMO ACIONAMENTO - SOLUÇÃO DEFINITIVA PARA CONTROLAR UMA ÚNICA ABA EXTERNA */
 async function proximo(){
     let wa = whatsappAccounts.find(x => x.selected);
     if(!wa) return alert("Selecione uma conta de WhatsApp de envio.");
@@ -963,16 +958,30 @@ async function proximo(){
     // Atualiza contato para Enviado no banco
     await supabaseClient.from('contacts_queue').update({ status: 'Enviado' }).eq('id', proximoContato.id);
 
-    // ESTRATÉGIA ANTI-MÚLTIPLAS ABAS:
-    // Se a referência à aba ainda não existe ou foi fechada, cria a aba fixa pela primeira vez.
     let urlDisparo = "https://web.whatsapp.com/send?phone=" + proximoContato.tel + "&text=" + encodeURIComponent(textoMensagem);
     
+    // CÓDIGO DA PÁGINA INTERMEDIÁRIA EM BRANCO (Mesa de Domínio Local)
+    // Esse script injetado faz a aba recém-criada redirecionar para o WhatsApp. 
+    // Como a aba nasce com o mesmo domínio do seu sistema, nós podemos alterar o link dela à vontade depois!
+    let codigoRedirecionador = `
+        <html>
+        <head><title>Direcionando...</title></head>
+        <body>
+            <script>window.location.href = "${urlDisparo}";<\/script>
+        </body>
+        </html>
+    `;
+    
+    let blobHtml = new Blob([codigoRedirecionador], { type: 'text/html' });
+    let urlBlobInterna = URL.createObjectURL(blobHtml);
+
     if (!abaWhatsAppReferencia || abaWhatsAppReferencia.closed) {
-        abaWhatsAppReferencia = window.open(urlDisparo, "whatsapp_janela_unica");
+        // Primeira vez: Abre a aba baseada no nosso próprio domínio (Blob)
+        abaWhatsAppReferencia = window.open(urlBlobInterna, "whatsapp_janela_unica");
     } else {
-        // Se a aba já existe, nós atualizamos o link dela diretamente via script de forma forçada.
-        abaWhatsAppReferencia.location.href = urlDisparo;
-        abaWhatsAppReferencia.focus(); // Traz a aba para frente se o navegador permitir
+        // Das próximas vezes: Como a aba pertence ao nosso domínio, o navegador PERMITE mudar o link dela sem abrir novas guias!
+        abaWhatsAppReferencia.location.href = urlBlobInterna;
+        abaWhatsAppReferencia.focus();
     }
 
     // Incrementa contador de envios do chip
