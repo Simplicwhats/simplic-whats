@@ -517,7 +517,8 @@ let whatsappAccounts = [];
 let listaScripts = [];
 let contaEditandoIndex = null;
 let usuarioLogado = "";
-
+let whatsappWindow = null;
+    
 function formatRemainingTime(timestamp){
     const diff = timestamp - Date.now();
     if(diff <= 0) return "Liberado";
@@ -555,7 +556,15 @@ function toggleTempoRestritoVisibilidade() {
     let container = document.getElementById("containerTempoRestrito");
     container.classList.toggle("hidden", status !== "restrito");
 }
-
+function abrirWhatsApp(url) {
+    if (!whatsappWindow || whatsappWindow.closed) {
+        whatsappWindow = window.open(url, "whatsappWindow");
+    } else {
+        whatsappWindow.location.href = url;
+        whatsappWindow.focus();
+    }
+}
+    
 /* LOGIN REAL COM BANCO DE DADOS */
 async function login(){
     let userDigitado = document.getElementById("user").value.trim();
@@ -933,7 +942,9 @@ async function proximo(){
 
     // Abre a janela de disparo
     let url = "https://web.whatsapp.com/send?phone=" + proximoContato.tel + "&text=" + encodeURIComponent(textoMensagem);
-    window.open(url, "_blank");
+
+// Abre ou reutiliza a mesma aba
+abrirWhatsApp(url);
 
     // Incrementa contador de envios do chip
     await supabaseClient.from('whatsapp_accounts').update({ sent: wa.sent + 1 }).eq('id', wa.id);
