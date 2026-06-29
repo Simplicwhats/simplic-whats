@@ -1205,7 +1205,29 @@ function fecharMiniPlayer() {
     document.getElementById("containerMiniPlayer").classList.add("hidden");
 }
 
-// Alterado de 'ejecutarMovimento' para 'executarMovimento'
+/* JOGO DA VELHA CONTRA A IA - COMPLETO E CORRIGIDO */
+let jogoAtActive = true;
+let jogadorAtual = "X"; 
+let tabuleiroSessao = ["", "", "", "", "", "", "", "", ""];
+const vitoriasDisponiveis = [
+    [0,1,2], [3,4,5], [6,7,8], // Linhas
+    [0,3,6], [1,4,7], [2,5,8], // Colunas
+    [0,4,8], [2,4,6]           // Diagonais
+];
+
+// Função chamada quando o jogador Humano ("X") clica em um quadrado
+function jogada(index) {
+    if (tabuleiroSessao[index] !== "" || !jogoAtActive || jogadorAtual !== "X") return;
+    
+    executarMovimento(index, "X");
+    
+    if (jogoAtActive) {
+        document.getElementById("statusJogo").innerText = "🤖 IA pensando...";
+        setTimeout(jogadaIA, 400);
+    }
+}
+
+// Função que atualiza o tabuleiro e checa o estado do jogo (CORRIGIDA)
 function executarMovimento(index, simbolo) {
     tabuleiroSessao[index] = simbolo;
     let quadrados = document.querySelectorAll(".quadrado");
@@ -1223,6 +1245,45 @@ function executarMovimento(index, simbolo) {
         return;
     }
     jogadorAtual = simbolo === "X" ? "O" : "X";
+}
+
+// Inteligência Artificial ("O")
+function jogadaIA() {
+    if (!jogoAtActive) return;
+    
+    // 1. Prioridade: IA tenta ganhar. 2. Prioridade: IA tenta bloquear o jogador
+    for (let simbi of ["O", "X"]) {
+        for (let combo of vitoriasDisponiveis) {
+            let preenchidos = combo.map(i => tabuleiroSessao[i]);
+            if (preenchidos.filter(s => s === simbi).length === 2 && preenchidos.includes("")) {
+                let r = combo[preenchidos.indexOf("")];
+                executarMovimento(r, "O");
+                if (jogoAtActive) document.getElementById("statusJogo").innerText = "Sua vez! (Você é o X)";
+                return;
+            }
+        }
+    }
+    
+    // 3. Prioridade: Jogada aleatória nas posições vazias
+    let vazios = tabuleiroSessao.map((val, idx) => val === "" ? idx : null).filter(val => val !== null);
+    let escolhaAleatoria = vazios[Math.floor(Math.random() * vazios.length)];
+    
+    executarMovimento(escolhaAleatoria, "O");
+    if (jogoAtActive) document.getElementById("statusJogo").innerText = "Sua vez! (Você é o X)";
+}
+
+// Verifica se o símbolo atual completou uma sequência vitoriosa
+function checarVitoria(simbolo) {
+    return vitoriasDisponiveis.some(combo => combo.every(i => tabuleiroSessao[i] === simbolo));
+}
+
+// Reinicia o estado do jogo
+function resetJogo() {
+    tabuleiroSessao = ["", "", "", "", "", "", "", "", ""];
+    jogoAtActive = true;
+    jogadorAtual = "X";
+    document.getElementById("statusJogo").innerText = "Sua vez! (Você é o X)";
+    document.querySelectorAll(".quadrado").forEach(q => q.innerText = "");
 }
 /* LOOP TIMER */
 setInterval(async () => {
