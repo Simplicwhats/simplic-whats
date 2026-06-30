@@ -1145,20 +1145,18 @@ function carregarMusicaUrl() {
     let inputUrl = document.getElementById("inputLinkMusica").value.trim();
     if (!inputUrl) return alert("Por favor, digite a URL.");
     
-    if (inputUrl.includes("youtube.com") || inputUrl.includes("youtu.be")) {
-        let videoId = "";
-        if (inputUrl.includes("v=")) {
-            videoId = inputUrl.split("v=")[1].split("&")[0];
-        } else if (inputUrl.includes("youtu.be/")) {
-            videoId = inputUrl.split("youtu.be/")[1].split("?")[0];
-        }
-        if(videoId) {
-            executarAudioSessao(`https://www.youtube.com/embed/${videoId}?autoplay=1`, "Vídeo do YouTube", true);
-        } else {
-            alert("Não consegui ler o ID do vídeo.");
-        }
+    // Regex robusta para capturar IDs do YouTube de URLs normais, shorts, compartilhamento e embed
+    let regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+    let match = inputUrl.match(regExp);
+    
+    if (match && match[2].length === 11) {
+        let videoId = match[2];
+        // Ativa a API do YouTube no embed para permitir melhor carregamento
+        executarAudioSessao(`https://www.youtube.com/embed/${videoId}?autoplay=1&enablejsapi=1`, "Vídeo do YouTube", true);
+    } else if (inputUrl.includes("http://") || inputUrl.includes("https://")) {
+        executarAudioSessao(inputUrl, "Link de Áudio Direto", false);
     } else {
-        executarAudioSessao(inputUrl, "Link Customizado", false);
+        alert("Não consegui identificar um link válido do YouTube ou de áudio.");
     }
 }
 
@@ -1166,26 +1164,44 @@ function carregarLofiPadrao() {
     executarAudioSessao("https://stream.zeno.fm/0r0xa792kwzuv", "Rádio Lofi Chill", false);
 }
 
-function ejecutarAudioSessao(urlAudio, nomeRotulo, isYoutube = false) {
+// Variável global para controlar o timer visual do preview
+let previewTimerInterval = null;
+
+function executarAudioSessao(urlAudio, nomeRotulo, isYoutube = false) {
     let playerNativo = document.getElementById("playerAudioNativo");
     let iframeYoutube = document.getElementById("playerYoutubeIframe");
     let wrapNativo = document.getElementById("wrapperAudioNativo");
     let wrapYoutube = document.getElementById("wrapperAudioYoutube");
+
+    // Limpa timers de preview anteriores
+    if(previewTimerInterval) clearInterval(previewTimerInterval);
 
     document.getElementById("lblNomeMusicaTocando").innerText = nomeRotulo;
     document.getElementById("containerMiniPlayer").classList.remove("hidden");
     fecharModal("modalMusica");
 
     if(isYoutube) {
-        playerNativo.pause(); playerNativo.src = "";
+        playerNativo.pause(); 
+        playerNativo.src = "";
         wrapNativo.classList.add("hidden");
         wrapYoutube.classList.remove("hidden");
         iframeYoutube.src = urlAudio;
+        
+        // Inicia um preview/timer simulado para a reprodução do YouTube
+        let segundos = 0;
+        previewTimerInterval = setInterval(() => {
+            segundos++;
+            let mins = Math.floor(segundos / 60).toString().padStart(2, '0');
+            let secs = (segundos % 60).toString().padStart(2, '0');
+            document.getElementById("lblNomeMusicaTocando").innerText = `${nomeRotulo} (⏱️ ${mins}:${secs})`;
+        }, 1000);
+
     } else {
         iframeYoutube.src = "";
         wrapYoutube.classList.add("hidden");
         wrapNativo.classList.remove("hidden");
         playerNativo.src = urlAudio;
+        
         playerNativo.play()
             .then(() => {
                 document.getElementById("btnPlayPauseCustom").innerText = "⏸ Pausar";
@@ -1194,6 +1210,17 @@ function ejecutarAudioSessao(urlAudio, nomeRotulo, isYoutube = false) {
                 document.getElementById("btnPlayPauseCustom").innerText = "▶ Tocar";
                 document.getElementById("btnPlayPauseCustom").className = "green";
             });
+
+        // Preview de tempo real para o elemento de áudio nativo
+        previewTimerInterval = setInterval(() => {
+            if(playerNativo.duration) {
+                let atualMin = Math.floor(playerNativo.currentTime / 60).toString().padStart(2, '0');
+                let atualSec = Math.floor(playerNativo.currentTime % 60).toString().padStart(2, '0');
+                let totalMin = Math.floor(playerNativo.duration / 60).toString().padStart(2, '0');
+                let totalSec = Math.floor(playerNativo.duration % 60).toString().padStart(2, '0');
+                document.getElementById("lblNomeMusicaTocando").innerText = `${nomeRotulo} (${atualMin}:${atualSec} / ${totalMin}:${totalSec})`;
+            }
+        }, 500);
     }
 }
 
@@ -1208,12 +1235,13 @@ function alternarPlayAudio() {
 }
 
 function fecharMiniPlayer() {
+    if(previewTimerInterval) clearInterval(previewTimerInterval);
     let player = document.getElementById("playerAudioNativo");
-    player.pause(); player.src = "";
+    player.pause(); 
+    player.src = "";
     document.getElementById("playerYoutubeIframe").src = "";
     document.getElementById("containerMiniPlayer").classList.add("hidden");
 }
-
 /* JOGO DA VELHA Contra IA */
 let jogoAtActive = true;
 let jogadorAtual = "X"; 
