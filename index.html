@@ -359,6 +359,21 @@ hr {
     margin-bottom: 15px;
 }
 
+/* NOVA INTERFACE DO MINI-PLAYER PREMIUM (ESTILO CARD DE DJ) */
+.premium-player {
+    background: linear-gradient(135deg, #1e1b4b 0%, #111827 100%) !important;
+    border: 1px solid rgba(245, 158, 11, 0.3) !important;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.6) !important;
+    position: relative;
+    overflow: hidden;
+}
+.premium-player::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; height: 3px;
+    background: linear-gradient(90deg, var(--orange), #f43f5e);
+}
+
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes scaleUp { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
@@ -454,17 +469,24 @@ hr {
 
 </div>
 
-<!-- PANEL DO PLAYER DE ÁUDIO NATIVO -->
-<div id="containerMiniPlayer" class="card hidden" style="margin-top: 25px; display: flex; flex-direction: column; gap: 8px;">
+<div id="containerMiniPlayer" class="card premium-player hidden" style="margin-top: 25px; display: flex; flex-direction: column; gap: 12px;">
     <div style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
-        <h3 style="margin:0;">🎵 Tocando Áudio: <span id="lblNomeMusicaTocando" style="color: var(--orange); font-size: 14px;">Música</span></h3>
-        <button onclick="fecharMiniPlayer()" class="btn-icon" style="color: var(--red); font-size: 16px;">✕</button>
+        <h3 style="margin:0; display:flex; align-items:center; gap:8px;">
+            <span style="animation: scaleUp 1s ease infinite alternate; font-size:18px;">🎵</span> 
+            <span>Tocando agora: <span id="lblNomeMusicaTocando" style="color: var(--orange); font-size: 14px; font-weight:700;">Música</span></span>
+        </h3>
+        <button onclick="fecharMiniPlayer()" class="btn-icon" style="color: var(--red); font-size: 18px; padding:4px; background:rgba(239,68,68,0.1); border-radius:50%; width:28px; height:28px;">✕</button>
     </div>
-    <div style="display: flex; align-items: center; gap: 15px; background: var(--bg-input); padding: 12px; border-radius: 10px; border: 1px solid var(--border-color); flex-wrap: wrap;">
+    
+    <div id="wrapperAudioNativo" style="display: flex; align-items: center; gap: 15px; background: rgba(0,0,0,0.4); padding: 12px; border-radius: 10px; border: 1px solid var(--border-color); flex-wrap: wrap;">
         <audio id="playerAudioNativo" controls style="flex: 1; height: 32px; min-width: 200px;"></audio>
         <div style="display: flex; gap: 8px;">
             <button onclick="alternarPlayAudio()" id="btnPlayPauseCustom" class="orange" style="margin: 0; padding: 6px 14px; font-size: 13px;">⏸ Pausar</button>
         </div>
+    </div>
+
+    <div id="wrapperAudioYoutube" class="hidden" style="border-radius:10px; overflow:hidden; border:1px solid var(--border-color); background:#000; display:flex; justify-content:center;">
+        <iframe id="playerYoutubeIframe" width="100%" height="180" src="" title="YouTube player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
     </div>
 </div>
 
@@ -505,7 +527,7 @@ hr {
         <input id="nomeScriptModal" placeholder="Ex: Cobrança Atraso 5 dias" style="margin-top:4px; margin-bottom:12px;">
         
         <label class="small">Mensagem de texto (Dica: Use "{nome} tudo bem?" para encaixar com ou sem nome)</label>
-        <textarea id="textoScriptModal" rows="5" placeholder="Olá {nome} tudo bem? Vimos aqui que..." style="margin-top:4px;"></textarea>
+        <textarea id="textoScriptModal" rows="7" placeholder="Olá {nome} tudo bem? Vimos aqui que..." style="margin-top:4px;"></textarea>
         
         <div class="flex-group" style="margin-top: 20px;">
             <button class="gray" onclick="fecharModal('modalScript')" style="flex:1;">Cancelar</button>
@@ -561,17 +583,15 @@ hr {
     </div>
 </div>
 
-<!-- POPUP DE ÁUDIO/MÚSICA MODIFICADO (COM BUSCA!) -->
 <div id="modalMusica" class="modal-overlay hidden">
     <div class="modal-content" style="width: 440px;">
         <h3>🎵 Player de Música</h3>
         
         <div class="modal-tabs">
             <button id="tabBtnBusca" class="modal-tab-btn active" onclick="mudarAbaMusica('busca')">Buscar Música</button>
-            <button id="tabBtnLink" class="modal-tab-btn" onclick="mudarAbaMusica('link')">Inserir URL</button>
+            <button id="tabBtnLink" class="modal-tab-btn" onclick="mudarAbaMusica('link')">Inserir URL / YouTube</button>
         </div>
 
-        <!-- ABA 1: BUSCAR PELO NOME -->
         <div id="abaMusicaBusca">
             <label class="small">Digite o nome da música ou artista:</label>
             <div class="flex-group" style="margin-top:4px; margin-bottom:10px;">
@@ -583,16 +603,14 @@ hr {
             </div>
         </div>
 
-        <!-- ABA 2: LINK DIRETO -->
         <div id="abaMusicaLink" class="hidden">
-            <label class="small">Cole a URL direta de um arquivo de áudio ou rádio stream:</label>
-            <input id="inputLinkMusica" placeholder="Ex: http://stream.zeno.fm/0r0xa792kwzuv" style="margin-top:4px; margin-bottom:12px;">
+            <label class="small">Cole a URL do arquivo de áudio ou link do YouTube:</label>
+            <input id="inputLinkMusica" placeholder="Ex: https://www.youtube.com/watch?v=... ou link .mp3" style="margin-top:4px; margin-bottom:12px;">
             <div class="flex-group" style="margin-bottom: 15px;">
                 <button class="green" onclick="carregarMusicaUrl()" style="width: 100%; margin-top:0;">Tocar URL Informada</button>
             </div>
         </div>
         
-        <!-- FLASHPAD LOFI -->
         <div style="background: rgba(245, 158, 11, 0.08); padding: 10px; border-radius: 8px; margin-bottom: 15px; border: 1px solid rgba(245, 158, 11, 0.15);">
             <span class="small" style="color: var(--orange); font-weight: 600;">⚡ Rápido:</span>
             <button class="orange" onclick="carregarLofiPadrao()" style="width: 100%; font-size: 12px; padding: 6px 10px; margin-top: 6px;">Ouvir Rádio Lofi Chill</button>
@@ -604,7 +622,6 @@ hr {
     </div>
 </div>
 
-<!-- POPUP DO JOGO DA VELHA -->
 <div id="modalJogo" class="modal-overlay hidden">
     <div class="modal-content" style="width: 320px; text-align: center;">
         <h3>🎮 Jogo contra IA</h3>
@@ -1001,7 +1018,10 @@ function renderScripts() {
     }
 
     listaScripts.forEach((s) => {
-        let textoEscapado = encodeURIComponent(s.texto);
+        // Correção de segurança para não quebrar strings com aspas e pulos de linha ao passar pelo HTML embutido
+        let textoEscapadoBase64 = btoa(unescape(encodeURIComponent(s.texto)));
+        let nomeSanitizado = s.nome.replace(/'/g, "\\'").replace(/"/g, '\\"');
+        
         html += `
         <div class="row" style="padding: 8px 6px;">
             <div style="display: flex; align-items: center; flex: 1; cursor: pointer;" onclick="selectScript(${s.id})">
@@ -1009,7 +1029,7 @@ function renderScripts() {
                 <span style="font-weight: 600; color: ${s.selected ? 'var(--blue)' : 'var(--text-main)'};">${s.nome}</span>
             </div>
             <div class="action-buttons">
-                <button onclick="prepararEdicaoScript(${s.id}, '${s.nome.replace(/'/g, "\\'")}', '${textoEscapado}')" class="btn-icon" style="color:#3b82f6;">📝</button>
+                <button onclick="prepararEdicaoScript(${s.id}, '${nomeSanitizado}', '${textoEscapadoBase64}')" class="btn-icon" style="color:#3b82f6;">📝</button>
                 <button onclick="removerScript(${s.id})" class="btn-icon" style="color:#ef4444;">✕</button>
             </div>
         </div>`;
@@ -1019,11 +1039,11 @@ function renderScripts() {
     previewScript();
 }
 
-function prepararEdicaoScript(id, nome, textoCodificado) {
+function prepararEdicaoScript(id, nome, base64Texto) {
     document.getElementById("tituloScriptModal").innerText = "Editar Script";
     document.getElementById("editScriptId").value = id; 
     document.getElementById("nomeScriptModal").value = nome;
-    document.getElementById("textoScriptModal").value = decodeURIComponent(textoCodificado);
+    document.getElementById("textoScriptModal").value = decodeURIComponent(escape(atob(base64Texto)));
     abrirModal("modalScript");
 }
 
@@ -1044,7 +1064,7 @@ function previewScript(){
     document.getElementById("preview").innerText = scriptAtivo ? scriptAtivo.texto : "Nenhum script selecionado.";
 }
 
-/* DISPARO DO PROXIMO */
+/* DISPARO DO PROXIMO - ABA UNICA REFORÇADA E CORRIGIDA */
 async function proximo(){
     let wa = whatsappAccounts.find(x => x.selected);
     if(!wa) return alert("Selecione uma conta de WhatsApp de envio.");
@@ -1073,22 +1093,11 @@ async function proximo(){
 
     let urlDisparo = "https://web.whatsapp.com/send?phone=" + proximoContato.tel + "&text=" + encodeURIComponent(textoMensagem);
     
-    let codigoRedirecionador = `
-        <html>
-        <head><title>Direcionando...</title></head>
-        <body>
-            <script>window.location.href = "${urlDisparo}";<\/script>
-        </body>
-        </html>
-    `;
-    
-    let blobHtml = new Blob([codigoRedirecionador], { type: 'text/html' });
-    let urlBlobInterna = URL.createObjectURL(blobHtml);
-
+    // Método Definitivo Anti-Múltiplas Abas (Reaproveitamento Real de Janela Target)
     if (!abaWhatsAppReferencia || abaWhatsAppReferencia.closed) {
-        abaWhatsAppReferencia = window.open(urlBlobInterna, "whatsapp_janela_unica");
+        abaWhatsAppReferencia = window.open(urlDisparo, "whatsapp_janela_unica_simplic");
     } else {
-        abaWhatsAppReferencia.location.href = urlBlobInterna;
+        abaWhatsAppReferencia.location.href = urlDisparo;
         abaWhatsAppReferencia.focus();
     }
 
@@ -1096,7 +1105,7 @@ async function proximo(){
     await syncLoadAll();
 }
 
-/* SISTEMA DE MÚSICA - INTEGRAÇÃO DE BUSCA ITUNES */
+/* SISTEMA DE MÚSICA - INTEGRANDO YOUTUBE + ITUNES */
 function mudarAbaMusica(aba) {
     document.getElementById("tabBtnBusca").classList.toggle("active", aba === 'busca');
     document.getElementById("tabBtnLink").classList.toggle("active", aba === 'link');
@@ -1112,7 +1121,6 @@ async function buscarMusicaPorNome() {
     container.innerHTML = `<div class="small" style="text-align:center; padding:10px; color: var(--primary);">🔍 Buscando...</div>`;
 
     try {
-        // Chamada à API pública do iTunes (Sem autenticação/Segura/Rápida)
         let resposta = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(termo)}&entity=song&limit=6`);
         let dados = await resposta.json();
 
@@ -1125,9 +1133,8 @@ async function buscarMusicaPorNome() {
         dados.results.forEach(faixa => {
             let nomeTrack = faixa.trackName;
             let artista = faixa.artistName;
-            let urlAudioPreview = faixa.previewUrl; // Link .mp3 direto da Apple
+            let urlAudioPreview = faixa.previewUrl;
 
-            // Escapar as strings para evitar quebra no JS
             let identificadorLabel = `${nomeTrack} - ${artista}`.replace(/'/g, "\\'");
 
             htmlResultados += `
@@ -1136,7 +1143,7 @@ async function buscarMusicaPorNome() {
                     <strong style="color:var(--text-main); font-size:12px;">${nomeTrack}</strong><br>
                     <span class="small">${artista}</span>
                 </div>
-                <button class="green" onclick="executarAudioSessao('${urlAudioPreview}', '${identificadorLabel}')" style="margin:0; padding:4px 10px; font-size:11px;">▶ Ouvir</button>
+                <button class="green" onclick="executarAudioSessao('${urlAudioPreview}', '${identificadorLabel}', false)" style="margin:0; padding:4px 10px; font-size:11px;">▶ Ouvir</button>
             </div>`;
         });
 
@@ -1150,33 +1157,71 @@ async function buscarMusicaPorNome() {
 
 function carregarMusicaUrl() {
     let inputUrl = document.getElementById("inputLinkMusica").value.trim();
-    if (!inputUrl) return alert("Por favor, digite a URL do áudio.");
-    executarAudioSessao(inputUrl, "Link Customizado");
+    if (!inputUrl) return alert("Por favor, digite a URL do áudio ou do Youtube.");
+    
+    // Testar se o link é do Youtube
+    if (inputUrl.includes("youtube.com") || inputUrl.includes("youtu.be")) {
+        let videoId = "";
+        if (inputUrl.includes("v=")) {
+            videoId = inputUrl.split("v=")[1].split("&")[0];
+        } else if (inputUrl.includes("youtu.be/")) {
+            videoId = inputUrl.split("youtu.be/")[1].split("?")[0];
+        }
+        
+        if(videoId) {
+            let embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1`;
+            executarAudioSessao(embedUrl, "Vídeo do YouTube", true);
+        } else {
+            alert("Não consegui ler o ID deste vídeo do YouTube. Verifique o link.");
+        }
+    } else {
+        executarAudioSessao(inputUrl, "Link Customizado", false);
+    }
 }
 
 function carregarLofiPadrao() {
     let urlLofi = "https://stream.zeno.fm/0r0xa792kwzuv"; 
-    executarAudioSessao(urlLofi, "Rádio Lofi Chill");
+    executarAudioSessao(urlLofi, "Rádio Lofi Chill", false);
 }
 
-function executarAudioSessao(urlAudio, nomeRotulo) {
-    let player = document.getElementById("playerAudioNativo");
-    player.src = urlAudio;
-    
+function executarAudioSessao(urlAudio, nomeRotulo, isYoutube = false) {
+    let playerNativo = document.getElementById("playerAudioNativo");
+    let iframeYoutube = document.getElementById("playerYoutubeIframe");
+    let wrapNativo = document.getElementById("wrapperAudioNativo");
+    let wrapYoutube = document.getElementById("wrapperAudioYoutube");
+
     document.getElementById("lblNomeMusicaTocando").innerText = nomeRotulo;
     document.getElementById("containerMiniPlayer").classList.remove("hidden");
     fecharModal("modalMusica");
-    
-    player.play()
-        .then(() => {
-            document.getElementById("btnPlayPauseCustom").innerText = "⏸ Pausar";
-            document.getElementById("btnPlayPauseCustom").className = "orange";
-        })
-        .catch(e => {
-            console.log("O navegador bloqueou o autoplay.");
-            document.getElementById("btnPlayPauseCustom").innerText = "▶ Tocar";
-            document.getElementById("btnPlayPauseCustom").className = "green";
-        });
+
+    if(isYoutube) {
+        // Pausar o player HTML5 nativo se estivesse ativo
+        playerNativo.pause();
+        playerNativo.src = "";
+        wrapNativo.classList.add("hidden");
+        
+        // Ativar Iframe do Youtube
+        wrapYoutube.classList.remove("hidden");
+        iframeYoutube.src = urlAudio;
+    } else {
+        // Desativar Iframe do Youtube
+        iframeYoutube.src = "";
+        wrapYoutube.classList.add("hidden");
+        
+        // Ativar e tocar player HTML5 nativo
+        wrapNativo.classList.remove("hidden");
+        playerNativo.src = urlAudio;
+        playerNativo.play()
+            .then(() => {
+                document.getElementById("btnPlayPauseCustom").innerText = "⏸ Pausar";
+                document.getElementById("btnPlayPauseCustom").className = "orange";
+            })
+            .catch(e => {
+                console.log("Autoplay bloqueado");
+                document.getElementById("btnPlayPauseCustom").innerText = "▶ Tocar";
+                document.getElementById("btnPlayPauseCustom").className = "green";
+            });
+    }
         
     document.getElementById("inputLinkMusica").value = "";
     document.getElementById("inputBuscaNome").value = "";
@@ -1202,20 +1247,20 @@ function fecharMiniPlayer() {
     let player = document.getElementById("playerAudioNativo");
     player.pause();
     player.src = "";
+    document.getElementById("playerYoutubeIframe").src = "";
     document.getElementById("containerMiniPlayer").classList.add("hidden");
 }
 
-/* JOGO DA VELHA CONTRA A IA - COMPLETO E CORRIGIDO */
+/* JOGO DA VELHA CONTRA A IA */
 let jogoAtActive = true;
 let jogadorAtual = "X"; 
 let tabuleiroSessao = ["", "", "", "", "", "", "", "", ""];
 const vitoriasDisponiveis = [
-    [0,1,2], [3,4,5], [6,7,8], // Linhas
-    [0,3,6], [1,4,7], [2,5,8], // Colunas
-    [0,4,8], [2,4,6]           // Diagonais
+    [0,1,2], [3,4,5], [6,7,8], 
+    [0,3,6], [1,4,7], [2,5,8], 
+    [0,4,8], [2,4,6]           
 ];
 
-// Função chamada quando o jogador Humano ("X") clica em um quadrado
 function jogada(index) {
     if (tabuleiroSessao[index] !== "" || !jogoAtActive || jogadorAtual !== "X") return;
     
@@ -1227,8 +1272,7 @@ function jogada(index) {
     }
 }
 
-// Função que atualiza o tabuleiro e checa o estado do jogo (CORRIGIDA)
-function executarMovimento(index, simbolo) {
+function ejecutarMovimento(index, simbolo) {
     tabuleiroSessao[index] = simbolo;
     let quadrados = document.querySelectorAll(".quadrado");
     quadrados[index].innerText = simbolo;
@@ -1247,11 +1291,9 @@ function executarMovimento(index, simbolo) {
     jogadorAtual = simbolo === "X" ? "O" : "X";
 }
 
-// Inteligência Artificial ("O")
 function jogadaIA() {
     if (!jogoAtActive) return;
     
-    // 1. Prioridade: IA tenta ganhar. 2. Prioridade: IA tenta bloquear o jogador
     for (let simbi of ["O", "X"]) {
         for (let combo of vitoriasDisponiveis) {
             let preenchidos = combo.map(i => tabuleiroSessao[i]);
@@ -1264,7 +1306,6 @@ function jogadaIA() {
         }
     }
     
-    // 3. Prioridade: Jogada aleatória nas posições vazias
     let vazios = tabuleiroSessao.map((val, idx) => val === "" ? idx : null).filter(val => val !== null);
     let escolhaAleatoria = vazios[Math.floor(Math.random() * vazios.length)];
     
@@ -1272,12 +1313,10 @@ function jogadaIA() {
     if (jogoAtActive) document.getElementById("statusJogo").innerText = "Sua vez! (Você é o X)";
 }
 
-// Verifica se o símbolo atual completou uma sequência vitoriosa
 function checarVitoria(simbolo) {
     return vitoriasDisponiveis.some(combo => combo.every(i => tabuleiroSessao[i] === simbolo));
 }
 
-// Reinicia o estado do jogo
 function resetJogo() {
     tabuleiroSessao = ["", "", "", "", "", "", "", "", ""];
     jogoAtActive = true;
@@ -1285,29 +1324,38 @@ function resetJogo() {
     document.getElementById("statusJogo").innerText = "Sua vez! (Você é o X)";
     document.querySelectorAll(".quadrado").forEach(q => q.innerText = "");
 }
-/* LOOP TIMER */
-setInterval(async () => {
-    if (!usuarioLogado) return; 
-    let alterouSessao = false;
 
-    for (let w of whatsappAccounts) {
-        if (w.status === "restrito" && w.restricted_until) {
-            if (Date.now() >= Number(w.restricted_until)) {
-                await supabaseClient.from('whatsapp_accounts').update({ status: 'ativo', restricted_until: null }).eq('id', w.id);
-                alterouSessao = true;
+/* LOOP TIMER */
+let processandoLoop = false;
+setInterval(async () => {
+    if (!usuarioLogado || processandoLoop) return; 
+    processandoLoop = true;
+    try {
+        let alterouSessao = false;
+
+        for (let w of whatsappAccounts) {
+            if (w.status === "restrito" && w.restricted_until) {
+                if (Date.now() >= Number(w.restricted_until)) {
+                    await supabaseClient.from('whatsapp_accounts').update({ status: 'ativo', restricted_until: null }).eq('id', w.id);
+                    alterouSessao = true;
+                }
             }
         }
-    }
 
-    if (alterouSessao) {
-        await syncLoadAll();
-    } else {
-        whatsappAccounts.forEach((w, i) => {
-            let elementoBadge = document.getElementById(`badge-status-${i}`);
-            if (elementoBadge && w.status === "restrito" && w.restricted_until) {
-                elementoBadge.innerText = "restrito: " + formatRemainingTime(Number(w.restricted_until));
-            }
-        });
+        if (alterouSessao) {
+            await syncLoadAll();
+        } else {
+            whatsappAccounts.forEach((w, i) => {
+                let elementoBadge = document.getElementById(`badge-status-${i}`);
+                if (elementoBadge && w.status === "restrito" && w.restricted_until) {
+                    elementoBadge.innerText = "restrito: " + formatRemainingTime(Number(w.restricted_until));
+                }
+            });
+        }
+    } catch(err) {
+        console.error(err);
+    } finally {
+        processandoLoop = false;
     }
 }, 1000);
 </script>
