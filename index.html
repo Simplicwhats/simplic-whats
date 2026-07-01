@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SIMPLIC Whatsapp - Dashboard Premium</title>
+<link rel="icon" href="data:,">
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
@@ -373,6 +374,13 @@ hr {
     background: linear-gradient(90deg, var(--orange), #ef4444);
 }
 
+.quadrado {
+    transition: background 0.2s;
+}
+.quadrado:hover {
+    background: #2d3748 !important;
+}
+
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes scaleUp { from { transform: scale(0.96); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
@@ -492,16 +500,16 @@ hr {
         </div>
 
         <div id="wrapperAudioYoutube" class="hidden" style="border-radius:10px; overflow:hidden; border:1px solid var(--border-color); background:#000; display:flex; justify-content:center;">
-    <iframe 
-        id="playerYoutubeIframe" 
-        width="100%" 
-        height="180" 
-        src="" 
-        title="Player de Mídia" 
-        frameborder="0" 
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen">
-    </iframe>
-</div>
+            <iframe 
+                id="playerYoutubeIframe" 
+                width="100%" 
+                height="180" 
+                src="" 
+                title="Player de Mídia" 
+                frameborder="0" 
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen">
+            </iframe>
+        </div>
     </div>
 
 </div>
@@ -610,31 +618,10 @@ hr {
         </div>
 
         <div id="abaMusicaLink" class="hidden">
-    <label class="small">Cole a URL do áudio, link do YouTube ou Deezer:</label>
-    <input id="inputLinkMusica" placeholder="Ex: https://www.youtube.com/watch?v=..." style="margin-top:4px; margin-bottom:12px;">
-    
-    <button class="green" onclick="(() => {
-        let inputUrl = document.getElementById('inputLinkMusica').value.trim();
-        if (!inputUrl) return alert('Por favor, digite a URL.');
-        
-        let regExpYoutube = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
-        let matchYoutube = inputUrl.match(regExpYoutube);
-        
-        let regExpDeezer = /deezer\.com\/(?:\w{2}\/)?(playlist|album|track)\/(\d+)/;
-        let matchDeezer = inputUrl.match(regExpDeezer);
-        
-        if (matchYoutube && matchYoutube[2].length === 11) {
-            executarAudioSessao('https://www.youtube.com/embed/' + matchYoutube[2] + '?autoplay=1&enablejsapi=1', 'Vídeo do YouTube', true);
-        } else if (matchDeezer) {
-            let urlEmbedDeezer = 'https://widget.deezer.com/widget/dark/' + matchDeezer[1] + '/' + matchDeezer[2] + '?tracklist=true';
-            executarAudioSessao(urlEmbedDeezer, 'Deezer ' + matchDeezer[1], true);
-        } else if (inputUrl.includes('http://') || inputUrl.includes('https://')) {
-            executarAudioSessao(inputUrl, 'Link de Áudio Direto', false);
-        } else {
-            alert('Não consegui identificar um link válido.');
-        }
-    })()" style="width: 100%; margin-top:0;">Tocar Mídia</button>
-</div>
+            <label class="small">Cole a URL do áudio, link do YouTube ou Deezer:</label>
+            <input id="inputLinkMusica" placeholder="Ex: https://www.youtube.com/watch?v=..." style="margin-top:4px; margin-bottom:12px;">
+            <button class="green" onclick="carregarMusicaUrl()" style="width: 100%; margin-top:0;">Tocar Mídia</button>
+        </div>
         
         <div style="background: rgba(245, 158, 11, 0.08); padding: 10px; border-radius: 8px; margin-bottom: 15px; border: 1px solid rgba(245, 158, 11, 0.15);">
             <button class="orange" onclick="carregarLofiPadrao()" style="width: 100%; font-size: 12px; padding: 8px; margin-top: 0;">⚡ Ouvir Rádio Lofi Chill</button>
@@ -678,6 +665,7 @@ let listaScripts = [];
 let contaEditandoIndex = null;
 let usuarioLogado = "";
 let abaWhatsAppReferencia = null; 
+let previewTimerInterval = null;
 
 function formatRemainingTime(timestamp){
     const diff = timestamp - Date.now();
@@ -723,7 +711,6 @@ async function login(){
         return alert("Login ou senha inválidos");
     }
 
-    // Camada básica de segurança em runtime
     sessionStorage.setItem("_ss_op", btoa(usuarioLogado));
 
     document.getElementById("lblUsuario").innerText = usuarioLogado;
@@ -1085,7 +1072,7 @@ function previewScript(){
     document.getElementById("preview").innerText = scriptAtivo ? scriptAtivo.texto : "Nenhum script selecionado.";
 }
 
-/* ACIONAMENTO CORRIGIDO E PROTEGIDO CONTRA BLOQUEIO DE POPUP */
+/* ACIONAMENTO CORRIGIDO */
 async function proximo(){
     let wa = whatsappAccounts.find(x => x.selected);
     if(!wa) return alert("Selecione uma conta de WhatsApp de envio.");
@@ -1112,23 +1099,20 @@ async function proximo(){
 
     let urlDisparo = "https://web.whatsapp.com/send?phone=" + proximoContato.tel + "&text=" + encodeURIComponent(textoMensagem);
     
-    // ANTI-BLOQUEIO: Abre a referência da janela IMEDIATAMENTE vinculada ao clique humano
     if (!abaWhatsAppReferencia || abaWhatsAppReferencia.closed) {
         abaWhatsAppReferencia = window.open("", "whatsapp_janela_unica_simplic");
     }
 
-    // Processa a atualização no Supabase concorrentemente
     await supabaseClient.from('contacts_queue').update({ status: 'Enviado' }).eq('id', proximoContato.id);
     await supabaseClient.from('whatsapp_accounts').update({ sent: wa.sent + 1 }).eq('id', wa.id);
 
-    // injeta a url final e foca na aba de envio
     abaWhatsAppReferencia.location.href = urlDisparo;
     abaWhatsAppReferencia.focus();
 
     await syncLoadAll();
 }
 
-/* SISTEMA DE MÚSICA */
+/* SISTEMA DE MÚSICA - ULTRA ANTI CORB */
 function mudarAbaMusica(aba) {
     document.getElementById("tabBtnBusca").classList.toggle("active", aba === 'busca');
     document.getElementById("tabBtnLink").classList.toggle("active", aba === 'link');
@@ -1174,27 +1158,24 @@ function carregarMusicaUrl() {
     let inputUrl = document.getElementById("inputLinkMusica").value.trim();
     if (!inputUrl) return alert("Por favor, digite a URL.");
     
-    // Regex para YouTube (vídeos, shorts, embeds)
     let regExpYoutube = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
     let matchYoutube = inputUrl.match(regExpYoutube);
     
-    // Regex para Deezer (Playlists, Álbuns ou Músicas)
     let regExpDeezer = /deezer\.com\/(?:\w{2}\/)?(playlist|album|track)\/(\d+)/;
     let matchDeezer = inputUrl.match(regExpDeezer);
     
     if (matchYoutube && matchYoutube[2].length === 11) {
         let videoId = matchYoutube[2];
         executarAudioSessao(`https://www.youtube.com/embed/${videoId}?autoplay=1&enablejsapi=1`, "Vídeo do YouTube", true);
-        return; // TRAVA: Para a execução aqui e não deixa rodar mais nada abaixo
+        return; 
     } 
     
     if (matchDeezer) {
         let tipo = matchDeezer[1]; 
         let id = matchDeezer[2];
         let urlEmbedDeezer = `https://widget.deezer.com/widget/dark/${tipo}/${id}?tracklist=true`;
-        
         executarAudioSessao(urlEmbedDeezer, `Deezer ${tipo.charAt(0).toUpperCase() + tipo.slice(1)}`, true);
-        return; // TRAVA: Garante que o link antigo da Deezer seja totalmente descartado
+        return; 
     } 
     
     if (inputUrl.includes("http://") || inputUrl.includes("https://")) {
@@ -1209,9 +1190,6 @@ function carregarLofiPadrao() {
     executarAudioSessao("https://stream.zeno.fm/0r0xa792kwzuv", "Rádio Lofi Chill", false);
 }
 
-// Variável global para controlar o timer visual do preview
-let previewTimerInterval = null;
-
 function executarAudioSessao(urlAudio, nomeRotulo, isIframe = false) {
     let playerNativo = document.getElementById("playerAudioNativo");
     let iframeYoutube = document.getElementById("playerYoutubeIframe"); 
@@ -1225,10 +1203,9 @@ function executarAudioSessao(urlAudio, nomeRotulo, isIframe = false) {
     fecharModal("modalMusica");
 
     if(isIframe) {
-        // Descarrega mídias HTML5 nativas de forma segura para evitar DOMException
         try {
             playerNativo.pause();
-            playerNativo.src = "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAAABAQ==";
+            playerNativo.removeAttribute('src');
             playerNativo.load();
         } catch(err) {
             console.log("Player nativo limpo.");
@@ -1291,7 +1268,8 @@ function fecharMiniPlayer() {
     document.getElementById("playerYoutubeIframe").src = "";
     document.getElementById("containerMiniPlayer").classList.add("hidden");
 }
-/* JOGO DA VELHA Contra IA */
+
+/* JOGO DA VELHA CONTRA IA */
 let jogoAtActive = true;
 let jogadorAtual = "X"; 
 let tabuleiroSessao = ["", "", "", "", "", "", "", "", ""];
@@ -1337,7 +1315,7 @@ function jogadaIA() {
         }
     }
     let vazios = tabuleiroSessao.map((val, idx) => val === "" ? idx : null).filter(val => val !== null);
-    executarMovimento(vazios[Math.floor(Math.random() * vazios.length)], "O");
+    ejecutarMovimento(vazios[Math.floor(Math.random() * vazios.length)], "O");
     if (jogoAtActive) document.getElementById("statusJogo").innerText = "Sua vez! (Você é o X)";
 }
 
