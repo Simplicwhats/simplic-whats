@@ -1149,7 +1149,7 @@ function carregarMusicaUrl() {
     let regExpYoutube = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
     let matchYoutube = inputUrl.match(regExpYoutube);
     
-    // REGEX MELHORADA: Ignora subdomínios, idiomas (/br/, /us/) e foca apenas no tipo e no ID numérico
+    // Regex para Deezer (Playlists, Álbuns ou Músicas) - Suporta idiomas como /br/, /us/ no link
     let regExpDeezer = /deezer\.com\/(?:\w{2}\/)?(playlist|album|track)\/(\d+)/;
     let matchDeezer = inputUrl.match(regExpDeezer);
     
@@ -1158,27 +1158,11 @@ function carregarMusicaUrl() {
         executarAudioSessao(`https://www.youtube.com/embed/${videoId}?autoplay=1&enablejsapi=1`, "Vídeo do YouTube", true);
     } 
     else if (matchDeezer) {
-        let tipo = matchDeezer[1]; // playlist, album ou track
-        let id = matchDeezer[2];   // Vai capturar exatamente '1362769557'
-        
-        // Monta a URL correta do player embutido que o CORB aceita
-        let urlEmbedDeezer = `https://widget.deezer.com/widget/dark/${tipo}/${id}?tracklist=true&autoplay=true`;
-        
-        executarAudioSessao(urlEmbedDeezer, `Deezer ${tipo.charAt(0).toUpperCase() + tipo.slice(1)}`, true);
-    } 
-    else if (inputUrl.includes("http://") || inputUrl.includes("https://")) {
-        executarAudioSessao(inputUrl, "Link de Áudio Direto", false);
-    } else {
-        alert("Não consegui identificar um link válido do YouTube, Deezer ou áudio direto.");
-    }
-}
-    else if (matchDeezer) {
-        let tipo = matchDeezer[1]; // playlist, album ou track
+        let tipo = matchDeezer[1]; 
         let id = matchDeezer[2];
-        // Criando a URL do Widget Oficial do Deezer no modo escuro
+        // Monta a URL correta do Widget Oficial que funciona dentro de Iframe
         let urlEmbedDeezer = `https://widget.deezer.com/widget/dark/${tipo}/${id}?tracklist=true&autoplay=true`;
         
-        // Usamos o 'isIframe = true' para ele se comportar igual ao YouTube
         executarAudioSessao(urlEmbedDeezer, `Deezer ${tipo.charAt(0).toUpperCase() + tipo.slice(1)}`, true);
     } 
     else if (inputUrl.includes("http://") || inputUrl.includes("https://")) {
@@ -1209,16 +1193,20 @@ function executarAudioSessao(urlAudio, nomeRotulo, isIframe = false) {
     fecharModal("modalMusica");
 
     if(isIframe) {
-        // Pausa e limpa o player HTML5 nativo se ele estiver tocando algo
-        playerNativo.pause(); 
-        playerNativo.src = "";
-        wrapNativo.classList.add("hidden");
+        // Injeta áudio silencioso falso para descarregar arquivos pesados sem disparar DOMException
+        try {
+            playerNativo.pause();
+            playerNativo.src = "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAAABAQ==";
+            playerNativo.load();
+        } catch(err) {
+            console.log("Player nativo resetado.");
+        }
         
-        // Exibe o wrapper do iframe (que serve pro YouTube e pro Deezer)
+        wrapNativo.classList.add("hidden");
         wrapYoutube.classList.remove("hidden");
         iframeYoutube.src = urlAudio;
         
-        // Timer simulado para conteúdos de Iframe (YouTube/Deezer)
+        // Timer de reprodução simulado para o Iframe (YouTube/Deezer)
         let segundos = 0;
         previewTimerInterval = setInterval(() => {
             segundos++;
@@ -1228,7 +1216,7 @@ function executarAudioSessao(urlAudio, nomeRotulo, isIframe = false) {
         }, 1000);
 
     } else {
-        // Limpa o iframe se mudar para áudio nativo
+        // Se for áudio nativo, limpa e esconde o iframe
         iframeYoutube.src = "";
         wrapYoutube.classList.add("hidden");
         wrapNativo.classList.remove("hidden");
@@ -1238,12 +1226,12 @@ function executarAudioSessao(urlAudio, nomeRotulo, isIframe = false) {
             .then(() => {
                 document.getElementById("btnPlayPauseCustom").innerText = "⏸ Pausar";
                 document.getElementById("btnPlayPauseCustom").className = "orange";
-            }).catch(() => {
+            }).catch((error) => {
                 document.getElementById("btnPlayPauseCustom").innerText = "▶ Tocar";
                 document.getElementById("btnPlayPauseCustom").className = "green";
             });
 
-        // Preview de tempo real para o áudio nativo (Ex: Rádio Lofi)
+        // Timer em tempo real para o player HTML5 nativo
         previewTimerInterval = setInterval(() => {
             if(playerNativo.duration) {
                 let atualMin = Math.floor(playerNativo.currentTime / 60).toString().padStart(2, '0');
