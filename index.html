@@ -610,10 +610,31 @@ hr {
         </div>
 
         <div id="abaMusicaLink" class="hidden">
-            <label class="small">Cole a URL do áudio ou link do YouTube:</label>
-            <input id="inputLinkMusica" placeholder="Ex: https://www.youtube.com/watch?v=..." style="margin-top:4px; margin-bottom:12px;">
-            <button class="green" onclick="carregarMusicaUrl()" style="width: 100%; margin-top:0;">Tocar Mídia</button>
-        </div>
+    <label class="small">Cole a URL do áudio, link do YouTube ou Deezer:</label>
+    <input id="inputLinkMusica" placeholder="Ex: https://www.youtube.com/watch?v=..." style="margin-top:4px; margin-bottom:12px;">
+    
+    <button class="green" onclick="(() => {
+        let inputUrl = document.getElementById('inputLinkMusica').value.trim();
+        if (!inputUrl) return alert('Por favor, digite a URL.');
+        
+        let regExpYoutube = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+        let matchYoutube = inputUrl.match(regExpYoutube);
+        
+        let regExpDeezer = /deezer\.com\/(?:\w{2}\/)?(playlist|album|track)\/(\d+)/;
+        let matchDeezer = inputUrl.match(regExpDeezer);
+        
+        if (matchYoutube && matchYoutube[2].length === 11) {
+            executarAudioSessao('https://www.youtube.com/embed/' + matchYoutube[2] + '?autoplay=1&enablejsapi=1', 'Vídeo do YouTube', true);
+        } else if (matchDeezer) {
+            let urlEmbedDeezer = 'https://widget.deezer.com/widget/dark/' + matchDeezer[1] + '/' + matchDeezer[2] + '?tracklist=true';
+            executarAudioSessao(urlEmbedDeezer, 'Deezer ' + matchDeezer[1], true);
+        } else if (inputUrl.includes('http://') || inputUrl.includes('https://')) {
+            executarAudioSessao(inputUrl, 'Link de Áudio Direto', false);
+        } else {
+            alert('Não consegui identificar um link válido.');
+        }
+    })()" style="width: 100%; margin-top:0;">Tocar Mídia</button>
+</div>
         
         <div style="background: rgba(245, 158, 11, 0.08); padding: 10px; border-radius: 8px; margin-bottom: 15px; border: 1px solid rgba(245, 158, 11, 0.15);">
             <button class="orange" onclick="carregarLofiPadrao()" style="width: 100%; font-size: 12px; padding: 8px; margin-top: 0;">⚡ Ouvir Rádio Lofi Chill</button>
