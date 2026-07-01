@@ -359,28 +359,19 @@ hr {
     margin-bottom: 15px;
 }
 
-/* MINI PLAYER PREMIUM RE-ESTILIZADO */
+/* MINI PLAYER PREMIUM */
 .premium-player {
-    background: linear-gradient(135deg, #111827 0%, #0b0f19 100%) !important;
-    border: 1px solid rgba(245, 158, 11, 0.3) !important;
-    box-shadow: 0 15px 35px rgba(0,0,0,0.6) !important;
+    background: linear-gradient(135deg, #0f172a 0%, #111827 100%) !important;
+    border: 1px solid rgba(245, 158, 11, 0.25) !important;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.5) !important;
     position: relative;
     overflow: hidden;
-    border-radius: 16px !important;
-    transition: all 0.3s ease;
 }
 .premium-player::before {
     content: '';
     position: absolute;
-    top: 0; left: 0; right: 0; height: 4px;
-    background: linear-gradient(90deg, var(--orange), #ef4444, var(--orange));
-    background-size: 200% auto;
-    animation: shineGradient 4s linear infinite;
-}
-
-@keyframes shineGradient {
-    0% { background-position: 0% 50%; }
-    100% { background-position: 200% 50%; }
+    top: 0; left: 0; right: 0; height: 3px;
+    background: linear-gradient(90deg, var(--orange), #ef4444);
 }
 
 .quadrado {
@@ -492,26 +483,23 @@ hr {
 
     </div>
 
-    <div id="containerMiniPlayer" class="card premium-player hidden" style="margin-top: 25px; display: flex; flex-direction: column; gap: 15px; padding: 20px;">
+    <div id="containerMiniPlayer" class="card premium-player hidden" style="margin-top: 25px; display: flex; flex-direction: column; gap: 12px;">
         <div style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
-            <h3 style="margin:0; display:flex; align-items:center; gap:10px;">
-                <span style="font-size:22px; animation: pulse 1.5s infinite;">🎵</span> 
-                <div style="display:flex; flex-direction:column;">
-                    <span class="small" style="text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); font-size: 10px; font-weight: 700;">Tocando Agora</span>
-                    <span id="lblNomeMusicaTocando" style="color: var(--orange); font-size: 15px; font-weight:700;">Música</span>
-                </div>
+            <h3 style="margin:0; display:flex; align-items:center; gap:8px;">
+                <span style="font-size:18px;">🎵</span> 
+                <span>Tocando agora: <span id="lblNomeMusicaTocando" style="color: var(--orange); font-size: 14px; font-weight:700;">Música</span></span>
             </h3>
-            <button onclick="fecharMiniPlayer()" class="btn-icon" style="color: var(--red); font-size: 12px; padding:6px; background:rgba(239,68,68,0.15); border-radius:50%; width:28px; height:28px; transition: all 0.2s;">✕</button>
+            <button onclick="fecharMiniPlayer()" class="btn-icon" style="color: var(--red); font-size: 16px; padding:4px; background:rgba(239,68,68,0.1); border-radius:50%; width:24px; height:24px;">✕</button>
         </div>
         
-        <div id="wrapperAudioNativo" style="display: flex; align-items: center; gap: 15px; background: rgba(0,0,0,0.4); padding: 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.04); flex-wrap: wrap;">
-            <audio id="playerAudioNativo" style="flex: 1; height: 32px; min-width: 200px; filter: invert(0.9) hue-rotate(180deg);"></audio>
+        <div id="wrapperAudioNativo" style="display: flex; align-items: center; gap: 15px; background: rgba(0,0,0,0.3); padding: 12px; border-radius: 10px; border: 1px solid var(--border-color); flex-wrap: wrap;">
+            <audio id="playerAudioNativo" controls style="flex: 1; height: 32px; min-width: 200px;"></audio>
             <div style="display: flex; gap: 8px;">
-                <button onclick="alternarPlayAudio()" id="btnPlayPauseCustom" class="orange" style="margin: 0; padding: 8px 16px; font-size: 13px; border-radius: 8px; box-shadow: 0 4px 10px rgba(245, 158, 11, 0.25);">⏸ Pausar</button>
+                <button onclick="alternarPlayAudio()" id="btnPlayPauseCustom" class="orange" style="margin: 0; padding: 6px 14px; font-size: 13px;">⏸ Pausar</button>
             </div>
         </div>
 
-        <div id="wrapperAudioYoutube" class="hidden" style="border-radius:12px; overflow:hidden; border:1px solid rgba(255,255,255,0.05); background:#000; display:flex; justify-content:center; box-shadow: inset 0 0 20px rgba(0,0,0,0.8);">
+        <div id="wrapperAudioYoutube" class="hidden" style="border-radius:10px; overflow:hidden; border:1px solid var(--border-color); background:#000; display:flex; justify-content:center;">
             <iframe 
                 id="playerYoutubeIframe" 
                 width="100%" 
@@ -610,8 +598,8 @@ hr {
 </div>
 
 <div id="modalMusica" class="modal-overlay hidden">
-    <div class="modal-content" style="background: #111827; border: 1px solid rgba(255,255,255,0.05); border-radius: 16px;">
-        <h3 style="display:flex; align-items:center; gap:8px;">🎵 Player de Música</h3>
+    <div class="modal-content">
+        <h3>🎵 Player de Música</h3>
         
         <div class="modal-tabs">
             <button id="tabBtnBusca" class="modal-tab-btn active" onclick="mudarAbaMusica('busca')">Buscar Música</button>
@@ -620,11 +608,11 @@ hr {
 
         <div id="abaMusicaBusca">
             <label class="small">Digite a música ou o nome do artista:</label>
-            <div class="flex-group" style="margin-top:6px; margin-bottom:12px;">
+            <div class="flex-group" style="margin-top:4px; margin-bottom:10px;">
                 <input id="inputBuscaNome" placeholder="Ex: Alok, Coldplay..." style="margin-top:0;">
                 <button class="blue" onclick="buscarMusicaPorNome()" style="margin-top:0; height: 45px;">Buscar</button>
             </div>
-            <div id="containerResultadosBusca" style="max-height: 180px; overflow-y: auto; margin-bottom: 15px; padding-right: 4px;">
+            <div id="containerResultadosBusca" style="max-height: 180px; overflow-y: auto; margin-bottom: 15px;">
                 <div class="small" style="color:var(--text-muted); text-align:center; padding:10px;">Resultados...</div>
             </div>
         </div>
@@ -632,14 +620,14 @@ hr {
         <div id="abaMusicaLink" class="hidden">
             <label class="small">Cole a URL do áudio, link do YouTube ou Deezer:</label>
             <input id="inputLinkMusica" placeholder="Ex: https://www.youtube.com/watch?v=..." style="margin-top:4px; margin-bottom:12px;">
-            <button class="green" onclick="carregarMusicaUrl()" style="width: 100%; margin-top:0; height:42px;">Tocar Mídia</button>
+            <button class="green" onclick="carregarMusicaUrl()" style="width: 100%; margin-top:0;">Tocar Mídia</button>
         </div>
         
-        <div style="background: rgba(245, 158, 11, 0.05); padding: 12px; border-radius: 10px; margin-bottom: 15px; border: 1px solid rgba(245, 158, 11, 0.12);">
-            <button class="orange" onclick="carregarLofiPadrao()" style="width: 100%; font-size: 12px; padding: 10px; margin-top: 0; box-shadow: 0 4px 10px rgba(245, 158, 11, 0.15);">⚡ Ouvir Rádio Lofi Chill</button>
+        <div style="background: rgba(245, 158, 11, 0.08); padding: 10px; border-radius: 8px; margin-bottom: 15px; border: 1px solid rgba(245, 158, 11, 0.15);">
+            <button class="orange" onclick="carregarLofiPadrao()" style="width: 100%; font-size: 12px; padding: 8px; margin-top: 0;">⚡ Ouvir Rádio Lofi Chill</button>
         </div>
 
-        <button class="gray" onclick="fecharModal('modalMusica')" style="width:100%; height:40px;">Fechar Janela</button>
+        <button class="gray" onclick="fecharModal('modalMusica')" style="width:100%;">Fechar Janela</button>
     </div>
 </div>
 
@@ -920,15 +908,13 @@ async function removeWA(id){
     await syncLoadAll();
 }
 
-/* FILA DE CONTATOS CORRIGIDA PARA CORRETAS QUEBRAS DE LINHA */
+/* FILA DE CONTATOS */
 async function salvarContatos(){
     let scriptIdx = document.getElementById("modalSelectScriptDefinido").value;
     if(scriptIdx === "") return alert("Você precisa selecionar um script válido.");
     
     let scriptVinculado = listaScripts[scriptIdx];
     let rawInput = document.getElementById("telefonesInputModal").value;
-    
-    // Divide mantendo as linhas originais da caixa de entrada de contatos
     let listagemNovos = rawInput.split("\n").map(x => x.trim()).filter(x => x);
 
     if(listagemNovos.length === 0) return alert("Insira pelo menos um número.");
@@ -937,13 +923,14 @@ async function salvarContatos(){
         let partes = linha.split(";");
         let numero = partes[0].trim();
         let nomeCliente = partes[1] ? partes[1].trim() : "";
-        let textoCustomizado = scriptVinculado.texto; // Mantém a string exata com \n nativos
+        let textoCustomizado = scriptVinculado.texto;
 
         if(nomeCliente) {
             textoCustomizado = textoCustomizado.replace(/\{nome\}/gi, nomeCliente);
         } else {
             textoCustomizado = textoCustomizado.replace(/\{nome\}/gi, "");
             textoCustomizado = textoCustomizado.replace(/Olá\s+/gi, "Olá, ");
+            textoCustomizado = textoCustomizado.replace(/\s{2,}/g, " ");
         }
 
         return {
@@ -1010,9 +997,9 @@ function abrirModalScriptNovo() {
 async function salvarScript(){
     let idExistente = document.getElementById("editScriptId").value;
     let nome = document.getElementById("nomeScriptModal").value.trim();
-    let texto = document.getElementById("textoScriptModal").value; // Sem .trim() excessivo para proteger formatações internas
+    let texto = document.getElementById("textoScriptModal").value.trim();
     
-    if(!nome || !texto.trim()) return alert("Preencha todos os campos do script");
+    if(!nome || !texto) return alert("Preencha todos os campos do script");
 
     if (idExistente) {
         await supabaseClient.from('message_scripts').update({ nome: nome, texto: texto }).eq('id', idExistente);
@@ -1085,7 +1072,7 @@ function previewScript(){
     document.getElementById("preview").innerText = scriptAtivo ? scriptAtivo.texto : "Nenhum script selecionado.";
 }
 
-/* DISPARO ATUALIZADO PRESERVANDO QUEBRAS DE LINHA */
+/* ACIONAMENTO CORRIGIDO */
 async function proximo(){
     let wa = whatsappAccounts.find(x => x.selected);
     if(!wa) return alert("Selecione uma conta de WhatsApp de envio.");
@@ -1110,7 +1097,6 @@ async function proximo(){
         textoMensagem = scriptGeral.texto;
     }
 
-    // Utiliza encodeURIComponent diretamente na string contendo \n nativos, garantindo a quebra no WhatsApp Web
     let urlDisparo = "https://web.whatsapp.com/send?phone=" + proximoContato.tel + "&text=" + encodeURIComponent(textoMensagem);
     
     if (!abaWhatsAppReferencia || abaWhatsAppReferencia.closed) {
@@ -1126,7 +1112,7 @@ async function proximo(){
     await syncLoadAll();
 }
 
-/* SISTEMA DE MÚSICA - ULTRA ANTI CORS & RE-ESTILIZADO */
+/* SISTEMA DE MÚSICA - ULTRA ANTI CORB */
 function mudarAbaMusica(aba) {
     document.getElementById("tabBtnBusca").classList.toggle("active", aba === 'busca');
     document.getElementById("tabBtnLink").classList.toggle("active", aba === 'link');
@@ -1139,7 +1125,7 @@ async function buscarMusicaPorNome() {
     if (!termo) return alert("Digite o nome de uma música ou artista!");
 
     let container = document.getElementById("containerResultadosBusca");
-    container.innerHTML = `<div class="small" style="text-align:center; padding:10px; color: var(--primary);">🔍 Buscando na biblioteca...</div>`;
+    container.innerHTML = `<div class="small" style="text-align:center; padding:10px; color: var(--primary);">🔍 Buscando...</div>`;
 
     try {
         let resposta = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(termo)}&entity=song&limit=5`);
@@ -1154,12 +1140,12 @@ async function buscarMusicaPorNome() {
         dados.results.forEach(faixa => {
             let identificadorLabel = `${faixa.trackName} - ${faixa.artistName}`.replace(/'/g, "\\'");
             htmlResultados += `
-            <div class="busca-item-resultado" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.04); margin-bottom:6px; padding:12px;">
-                <div style="max-width: 68%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                    <strong style="color:#ffffff; font-size:13px;">${faixa.trackName}</strong><br>
-                    <span class="small" style="color: var(--text-muted);">${faixa.artistName}</span>
+            <div class="busca-item-resultado">
+                <div style="max-width: 70%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                    <strong style="color:var(--text-main); font-size:12px;">${faixa.trackName}</strong><br>
+                    <span class="small">${faixa.artistName}</span>
                 </div>
-                <button class="green" onclick="executarAudioSessao('${faixa.previewUrl}', '${identificadorLabel}', false)" style="margin:0; padding:6px 12px; font-size:12px; border-radius:6px; box-shadow: 0 2px 6px rgba(16,185,129,0.2);">▶ Ouvir</button>
+                <button class="green" onclick="executarAudioSessao('${faixa.previewUrl}', '${identificadorLabel}', false)" style="margin:0; padding:4px 10px; font-size:11px;">▶ Ouvir</button>
             </div>`;
         });
         container.innerHTML = htmlResultados;
@@ -1172,15 +1158,21 @@ async function carregarMusicaUrl() {
     let inputUrl = document.getElementById("inputLinkMusica").value.trim();
     if (!inputUrl) return alert("Por favor, digite a URL.");
     
+    // 1. Se for link encurtado da Deezer (link.deezer.com), precisamos expandir a URL
     if (inputUrl.includes("link.deezer.com")) {
         try {
+            // Usa um proxy gratuito para contornar o bloqueio de CORS e descobrir a URL real
+            let proxyUrl = "https://cors-anywhere.herokuapp.com/";
+            // Se o cors-anywhere pedir ativação, usamos uma alternativa rápida baseada em fetch de redirecionamento nativo:
             let resposta = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(inputUrl)}`);
             let dados = await resposta.json();
             
+            // Procura por alguma menção da URL real da playlist dentro do conteúdo retornado
             let matchUrlReal = dados.contents.match(/https:\/\/www\.deezer\.com\/[^\s"\']+/);
             if (matchUrlReal) {
-                inputUrl = matchUrlReal[0];
+                inputUrl = matchUrlReal[0]; // Substitui pelo link completo!
             } else {
+                // Tentativa secundária: extrair direto o ID se padrão de metatag existir
                 let matchIdDireto = dados.contents.match(/(?:playlist|album|track)\/(\d+)/);
                 if (matchIdDireto) {
                     let urlEmbedDeezer = `https://widget.deezer.com/widget/dark/${matchIdDireto[0]}?tracklist=true`;
@@ -1190,11 +1182,13 @@ async function carregarMusicaUrl() {
             }
         } catch (err) {
             console.error("Erro ao expandir link curto:", err);
-            alert("Links encurtados do celular precisam ser abertos no navegador antes. Copie o link completo aqui!");
+            // Fallback manual caso a API falhe: avisa o usuário
+            alert("Links encurtados do celular (link.deezer.com) precisam ser abertos no navegador antes. Copie o link da barra de endereços do seu navegador e cole aqui!");
             return;
         }
     }
     
+    // 2. Regex para YouTube (vídeos, shorts, embeds)
     let regExpYoutube = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
     let matchYoutube = inputUrl.match(regExpYoutube);
     
@@ -1204,6 +1198,7 @@ async function carregarMusicaUrl() {
         return; 
     } 
     
+    // 3. Regex para Deezer completo (Ignora parâmetros extras)
     let regExpDeezer = /deezer\.com\/(?:\w{2}\/)?(playlist|album|track)\/(\d+)/;
     let matchDeezer = inputUrl.match(regExpDeezer);
     
@@ -1220,14 +1215,13 @@ async function carregarMusicaUrl() {
         return;
     } 
     
-    alert("Não consegui identificar um link válido.");
+    alert("Não consegui identificar um link válido do YouTube, Deezer ou áudio direto.");
 }
-
 function carregarLofiPadrao() {
     executarAudioSessao("https://stream.zeno.fm/0r0xa792kwzuv", "Rádio Lofi Chill", false);
 }
 
-function ejecutarAudioSessao(urlAudio, nomeRotulo, isIframe = false) {
+function executarAudioSessao(urlAudio, nomeRotulo, isIframe = false) {
     let playerNativo = document.getElementById("playerAudioNativo");
     let iframeYoutube = document.getElementById("playerYoutubeIframe"); 
     let wrapNativo = document.getElementById("wrapperAudioNativo");
