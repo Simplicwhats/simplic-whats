@@ -1154,11 +1154,41 @@ async function buscarMusicaPorNome() {
     }
 }
 
-function carregarMusicaUrl() {
+async function carregarMusicaUrl() {
     let inputUrl = document.getElementById("inputLinkMusica").value.trim();
     if (!inputUrl) return alert("Por favor, digite a URL.");
     
-    // 1. Regex para YouTube (vídeos, shorts, embeds)
+    // 1. Se for link encurtado da Deezer (link.deezer.com), precisamos expandir a URL
+    if (inputUrl.includes("link.deezer.com")) {
+        try {
+            // Usa um proxy gratuito para contornar o bloqueio de CORS e descobrir a URL real
+            let proxyUrl = "https://cors-anywhere.herokuapp.com/";
+            // Se o cors-anywhere pedir ativação, usamos uma alternativa rápida baseada em fetch de redirecionamento nativo:
+            let resposta = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(inputUrl)}`);
+            let dados = await resposta.json();
+            
+            // Procura por alguma menção da URL real da playlist dentro do conteúdo retornado
+            let matchUrlReal = dados.contents.match(/https:\/\/www\.deezer\.com\/[^\s"\']+/);
+            if (matchUrlReal) {
+                inputUrl = matchUrlReal[0]; // Substitui pelo link completo!
+            } else {
+                // Tentativa secundária: extrair direto o ID se padrão de metatag existir
+                let matchIdDireto = dados.contents.match(/(?:playlist|album|track)\/(\d+)/);
+                if (matchIdDireto) {
+                    let urlEmbedDeezer = `https://widget.deezer.com/widget/dark/${matchIdDireto[0]}?tracklist=true`;
+                    executarAudioSessao(urlEmbedDeezer, "Playlist Deezer", true);
+                    return;
+                }
+            }
+        } catch (err) {
+            console.error("Erro ao expandir link curto:", err);
+            // Fallback manual caso a API falhe: avisa o usuário
+            alert("Links encurtados do celular (link.deezer.com) precisam ser abertos no navegador antes. Copie o link da barra de endereços do seu navegador e cole aqui!");
+            return;
+        }
+    }
+    
+    // 2. Regex para YouTube (vídeos, shorts, embeds)
     let regExpYoutube = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
     let matchYoutube = inputUrl.match(regExpYoutube);
     
@@ -1168,15 +1198,13 @@ function carregarMusicaUrl() {
         return; 
     } 
     
-    // 2. Regex aprimorada para Deezer (Ignora parâmetros extras de compartilhamento após o ID)
+    // 3. Regex para Deezer completo (Ignora parâmetros extras)
     let regExpDeezer = /deezer\.com\/(?:\w{2}\/)?(playlist|album|track)\/(\d+)/;
     let matchDeezer = inputUrl.match(regExpDeezer);
     
     if (matchDeezer) {
         let tipo = matchDeezer[1]; 
-        let id = matchDeezer[2]; // Isola perfeitamente o "1362769557"
-        
-        // Monta o Widget Oficial limpo, sem carregar os scripts pesados e redirecionamentos da Deezer
+        let id = matchDeezer[2];
         let urlEmbedDeezer = `https://widget.deezer.com/widget/dark/${tipo}/${id}?tracklist=true`;
         executarAudioSessao(urlEmbedDeezer, `Deezer ${tipo.charAt(0).toUpperCase() + tipo.slice(1)}`, true);
         return; 
