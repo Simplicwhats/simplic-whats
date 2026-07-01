@@ -1141,7 +1141,7 @@ async function buscarMusicaPorNome() {
     }
 }
 
-ffunction carregarMusicaUrl() {
+function carregarMusicaUrl() {
     let inputUrl = document.getElementById("inputLinkMusica").value.trim();
     if (!inputUrl) return alert("Por favor, digite a URL.");
     
@@ -1169,7 +1169,7 @@ ffunction carregarMusicaUrl() {
     } else {
         alert("Não consegui identificar um link válido do YouTube, Deezer ou áudio direto.");
     }
-} // <-- Certifique-se de que esta chave fecha a função carregarMusicaUrl antes de começar a próxima!
+} // <-- Esta chave fecha rigorosamente a função carregarMusicaUrl
 
 function carregarLofiPadrao() {
     executarAudioSessao("https://stream.zeno.fm/0r0xa792kwzuv", "Rádio Lofi Chill", false);
