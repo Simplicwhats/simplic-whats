@@ -1139,7 +1139,7 @@ async function buscarMusicaPorNome() {
     } catch (e) {
         container.innerHTML = `<div class="small" style="text-align:center; padding:10px; color: var(--red);">Erro no serviço de busca.</div>`;
     }
-} // <-- Esta chave fecha estritamente a função buscarMusicaPorNome
+}
 
 function carregarMusicaUrl() {
     let inputUrl = document.getElementById("inputLinkMusica").value.trim();
@@ -1160,6 +1160,7 @@ function carregarMusicaUrl() {
     else if (matchDeezer) {
         let tipo = matchDeezer[1]; 
         let id = matchDeezer[2];
+        // Monta a URL correta do Widget Oficial que o CORB aceita sem bloquear
         let urlEmbedDeezer = `https://widget.deezer.com/widget/dark/${tipo}/${id}?tracklist=true&autoplay=true`;
         
         executarAudioSessao(urlEmbedDeezer, `Deezer ${tipo.charAt(0).toUpperCase() + tipo.slice(1)}`, true);
@@ -1169,7 +1170,7 @@ function carregarMusicaUrl() {
     } else {
         alert("Não consegui identificar um link válido do YouTube, Deezer ou áudio direto.");
     }
-} // <-- Esta chave fecha estritamente a função carregarMusicaUrl
+}
 
 function carregarLofiPadrao() {
     executarAudioSessao("https://stream.zeno.fm/0r0xa792kwzuv", "Rádio Lofi Chill", false);
@@ -1184,7 +1185,6 @@ function executarAudioSessao(urlAudio, nomeRotulo, isIframe = false) {
     let wrapNativo = document.getElementById("wrapperAudioNativo");
     let wrapYoutube = document.getElementById("wrapperAudioYoutube");
 
-    // Limpa timers anteriores
     if(previewTimerInterval) clearInterval(previewTimerInterval);
 
     document.getElementById("lblNomeMusicaTocando").innerText = nomeRotulo;
@@ -1192,20 +1192,19 @@ function executarAudioSessao(urlAudio, nomeRotulo, isIframe = false) {
     fecharModal("modalMusica");
 
     if(isIframe) {
-        // Injeta áudio silencioso falso para descarregar arquivos pesados sem disparar DOMException
+        // Descarrega mídias HTML5 nativas de forma segura para evitar DOMException
         try {
             playerNativo.pause();
             playerNativo.src = "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAAABAQ==";
             playerNativo.load();
         } catch(err) {
-            console.log("Player nativo resetado.");
+            console.log("Player nativo limpo.");
         }
         
         wrapNativo.classList.add("hidden");
         wrapYoutube.classList.remove("hidden");
         iframeYoutube.src = urlAudio;
         
-        // Timer de reprodução simulado para o Iframe (YouTube/Deezer)
         let segundos = 0;
         previewTimerInterval = setInterval(() => {
             segundos++;
@@ -1215,7 +1214,6 @@ function executarAudioSessao(urlAudio, nomeRotulo, isIframe = false) {
         }, 1000);
 
     } else {
-        // Se for áudio nativo, limpa e esconde o iframe
         iframeYoutube.src = "";
         wrapYoutube.classList.add("hidden");
         wrapNativo.classList.remove("hidden");
@@ -1230,7 +1228,6 @@ function executarAudioSessao(urlAudio, nomeRotulo, isIframe = false) {
                 document.getElementById("btnPlayPauseCustom").className = "green";
             });
 
-        // Timer em tempo real para o player HTML5 nativo
         previewTimerInterval = setInterval(() => {
             if(playerNativo.duration) {
                 let atualMin = Math.floor(playerNativo.currentTime / 60).toString().padStart(2, '0');
