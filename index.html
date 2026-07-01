@@ -1149,7 +1149,7 @@ function carregarMusicaUrl() {
     let regExpYoutube = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
     let matchYoutube = inputUrl.match(regExpYoutube);
     
-    // Regex para Deezer (Playlists, Álbuns ou Músicas)
+    // REGEX MELHORADA: Ignora subdomínios, idiomas (/br/, /us/) e foca apenas no tipo e no ID numérico
     let regExpDeezer = /deezer\.com\/(?:\w{2}\/)?(playlist|album|track)\/(\d+)/;
     let matchDeezer = inputUrl.match(regExpDeezer);
     
@@ -1157,6 +1157,21 @@ function carregarMusicaUrl() {
         let videoId = matchYoutube[2];
         executarAudioSessao(`https://www.youtube.com/embed/${videoId}?autoplay=1&enablejsapi=1`, "Vídeo do YouTube", true);
     } 
+    else if (matchDeezer) {
+        let tipo = matchDeezer[1]; // playlist, album ou track
+        let id = matchDeezer[2];   // Vai capturar exatamente '1362769557'
+        
+        // Monta a URL correta do player embutido que o CORB aceita
+        let urlEmbedDeezer = `https://widget.deezer.com/widget/dark/${tipo}/${id}?tracklist=true&autoplay=true`;
+        
+        executarAudioSessao(urlEmbedDeezer, `Deezer ${tipo.charAt(0).toUpperCase() + tipo.slice(1)}`, true);
+    } 
+    else if (inputUrl.includes("http://") || inputUrl.includes("https://")) {
+        executarAudioSessao(inputUrl, "Link de Áudio Direto", false);
+    } else {
+        alert("Não consegui identificar um link válido do YouTube, Deezer ou áudio direto.");
+    }
+}
     else if (matchDeezer) {
         let tipo = matchDeezer[1]; // playlist, album ou track
         let id = matchDeezer[2];
