@@ -492,8 +492,17 @@ hr {
         </div>
 
         <div id="wrapperAudioYoutube" class="hidden" style="border-radius:10px; overflow:hidden; border:1px solid var(--border-color); background:#000; display:flex; justify-content:center;">
-            <iframe id="playerYoutubeIframe" width="100%" height="180" src="" title="YouTube player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-        </div>
+    <iframe 
+        id="playerYoutubeIframe" 
+        width="100%" 
+        height="180" 
+        src="" 
+        title="Player de Mídia" 
+        frameborder="0" 
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen" 
+        allowfullscreen>
+    </iframe>
+</div>
     </div>
 
 </div>
@@ -1145,11 +1154,9 @@ function carregarMusicaUrl() {
     let inputUrl = document.getElementById("inputLinkMusica").value.trim();
     if (!inputUrl) return alert("Por favor, digite a URL.");
     
-    // Regex para YouTube (vídeos, shorts, embeds)
     let regExpYoutube = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
     let matchYoutube = inputUrl.match(regExpYoutube);
     
-    // Regex para Deezer (Playlists, Álbuns ou Músicas)
     let regExpDeezer = /deezer\.com\/(?:\w{2}\/)?(playlist|album|track)\/(\d+)/;
     let matchDeezer = inputUrl.match(regExpDeezer);
     
@@ -1160,8 +1167,8 @@ function carregarMusicaUrl() {
     else if (matchDeezer) {
         let tipo = matchDeezer[1]; 
         let id = matchDeezer[2];
-        // Monta a URL correta do Widget Oficial que o CORB aceita sem bloquear
-        let urlEmbedDeezer = `https://widget.deezer.com/widget/dark/${tipo}/${id}?tracklist=true&autoplay=true`;
+        // CORREÇÃO: Removemos o autoplay que quebra a decodificação de pacotes do Widget Deezer
+        let urlEmbedDeezer = `https://widget.deezer.com/widget/dark/${tipo}/${id}?tracklist=true`;
         
         executarAudioSessao(urlEmbedDeezer, `Deezer ${tipo.charAt(0).toUpperCase() + tipo.slice(1)}`, true);
     } 
