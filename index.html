@@ -1145,18 +1145,31 @@ function carregarMusicaUrl() {
     let inputUrl = document.getElementById("inputLinkMusica").value.trim();
     if (!inputUrl) return alert("Por favor, digite a URL.");
     
-    // Regex robusta para capturar IDs do YouTube de URLs normais, shorts, compartilhamento e embed
-    let regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
-    let match = inputUrl.match(regExp);
+    // Regex para YouTube (vídeos, shorts, embeds)
+    let regExpYoutube = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+    let matchYoutube = inputUrl.match(regExpYoutube);
     
-    if (match && match[2].length === 11) {
-        let videoId = match[2];
-        // Ativa a API do YouTube no embed para permitir melhor carregamento
+    // Regex para Deezer (Playlists, Álbuns ou Músicas)
+    let regExpDeezer = /deezer\.com\/(?:\w{2}\/)?(playlist|album|track)\/(\d+)/;
+    let matchDeezer = inputUrl.match(regExpDeezer);
+    
+    if (matchYoutube && matchYoutube[2].length === 11) {
+        let videoId = matchYoutube[2];
         executarAudioSessao(`https://www.youtube.com/embed/${videoId}?autoplay=1&enablejsapi=1`, "Vídeo do YouTube", true);
-    } else if (inputUrl.includes("http://") || inputUrl.includes("https://")) {
+    } 
+    else if (matchDeezer) {
+        let tipo = matchDeezer[1]; // playlist, album ou track
+        let id = matchDeezer[2];
+        // Criando a URL do Widget Oficial do Deezer no modo escuro
+        let urlEmbedDeezer = `https://widget.deezer.com/widget/dark/${tipo}/${id}?tracklist=true&autoplay=true`;
+        
+        // Usamos o 'isIframe = true' para ele se comportar igual ao YouTube
+        executarAudioSessao(urlEmbedDeezer, `Deezer ${tipo.charAt(0).toUpperCase() + tipo.slice(1)}`, true);
+    } 
+    else if (inputUrl.includes("http://") || inputUrl.includes("https://")) {
         executarAudioSessao(inputUrl, "Link de Áudio Direto", false);
     } else {
-        alert("Não consegui identificar um link válido do YouTube ou de áudio.");
+        alert("Não consegui identificar um link válido do YouTube, Deezer ou áudio direto.");
     }
 }
 
@@ -1167,27 +1180,30 @@ function carregarLofiPadrao() {
 // Variável global para controlar o timer visual do preview
 let previewTimerInterval = null;
 
-function executarAudioSessao(urlAudio, nomeRotulo, isYoutube = false) {
+function ejecutarAudioSessao(urlAudio, nomeRotulo, isIframe = false) {
     let playerNativo = document.getElementById("playerAudioNativo");
-    let iframeYoutube = document.getElementById("playerYoutubeIframe");
+    let iframeYoutube = document.getElementById("playerYoutubeIframe"); 
     let wrapNativo = document.getElementById("wrapperAudioNativo");
     let wrapYoutube = document.getElementById("wrapperAudioYoutube");
 
-    // Limpa timers de preview anteriores
+    // Limpa timers anteriores
     if(previewTimerInterval) clearInterval(previewTimerInterval);
 
     document.getElementById("lblNomeMusicaTocando").innerText = nomeRotulo;
     document.getElementById("containerMiniPlayer").classList.remove("hidden");
     fecharModal("modalMusica");
 
-    if(isYoutube) {
+    if(isIframe) {
+        // Pausa e limpa o player HTML5 nativo se ele estiver tocando algo
         playerNativo.pause(); 
         playerNativo.src = "";
         wrapNativo.classList.add("hidden");
+        
+        // Exibe o wrapper do iframe (que serve pro YouTube e pro Deezer)
         wrapYoutube.classList.remove("hidden");
         iframeYoutube.src = urlAudio;
         
-        // Inicia um preview/timer simulado para a reprodução do YouTube
+        // Timer simulado para conteúdos de Iframe (YouTube/Deezer)
         let segundos = 0;
         previewTimerInterval = setInterval(() => {
             segundos++;
@@ -1197,6 +1213,7 @@ function executarAudioSessao(urlAudio, nomeRotulo, isYoutube = false) {
         }, 1000);
 
     } else {
+        // Limpa o iframe se mudar para áudio nativo
         iframeYoutube.src = "";
         wrapYoutube.classList.add("hidden");
         wrapNativo.classList.remove("hidden");
@@ -1211,7 +1228,7 @@ function executarAudioSessao(urlAudio, nomeRotulo, isYoutube = false) {
                 document.getElementById("btnPlayPauseCustom").className = "green";
             });
 
-        // Preview de tempo real para o elemento de áudio nativo
+        // Preview de tempo real para o áudio nativo (Ex: Rádio Lofi)
         previewTimerInterval = setInterval(() => {
             if(playerNativo.duration) {
                 let atualMin = Math.floor(playerNativo.currentTime / 60).toString().padStart(2, '0');
