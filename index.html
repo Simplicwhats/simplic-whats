@@ -1158,11 +1158,9 @@ function carregarMusicaUrl() {
     let inputUrl = document.getElementById("inputLinkMusica").value.trim();
     if (!inputUrl) return alert("Por favor, digite a URL.");
     
+    // 1. Regex para YouTube (vídeos, shorts, embeds)
     let regExpYoutube = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
     let matchYoutube = inputUrl.match(regExpYoutube);
-    
-    let regExpDeezer = /deezer\.com\/(?:\w{2}\/)?(playlist|album|track)\/(\d+)/;
-    let matchDeezer = inputUrl.match(regExpDeezer);
     
     if (matchYoutube && matchYoutube[2].length === 11) {
         let videoId = matchYoutube[2];
@@ -1170,9 +1168,15 @@ function carregarMusicaUrl() {
         return; 
     } 
     
+    // 2. Regex aprimorada para Deezer (Ignora parâmetros extras de compartilhamento após o ID)
+    let regExpDeezer = /deezer\.com\/(?:\w{2}\/)?(playlist|album|track)\/(\d+)/;
+    let matchDeezer = inputUrl.match(regExpDeezer);
+    
     if (matchDeezer) {
         let tipo = matchDeezer[1]; 
-        let id = matchDeezer[2];
+        let id = matchDeezer[2]; // Isola perfeitamente o "1362769557"
+        
+        // Monta o Widget Oficial limpo, sem carregar os scripts pesados e redirecionamentos da Deezer
         let urlEmbedDeezer = `https://widget.deezer.com/widget/dark/${tipo}/${id}?tracklist=true`;
         executarAudioSessao(urlEmbedDeezer, `Deezer ${tipo.charAt(0).toUpperCase() + tipo.slice(1)}`, true);
         return; 
@@ -1185,7 +1189,6 @@ function carregarMusicaUrl() {
     
     alert("Não consegui identificar um link válido do YouTube, Deezer ou áudio direto.");
 }
-
 function carregarLofiPadrao() {
     executarAudioSessao("https://stream.zeno.fm/0r0xa792kwzuv", "Rádio Lofi Chill", false);
 }
