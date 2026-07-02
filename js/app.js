@@ -8,26 +8,29 @@ function toggleTempoRestritoVisibilidade(){
 }
 
 /* 🔥 LOGIN 100% FIX */
-window.login = async function(){
-    let user = document.getElementById("user").value.trim();
-    let pass = document.getElementById("pass").value.trim();
+window.login = async function () {
+    let userDigitado = document.getElementById("user").value.trim();
+    let passDigitado = document.getElementById("pass").value.trim();
 
-    if(user === "Levi" && pass === "2104"){
+    if (userDigitado === "Levi" && passDigitado === "2104") {
         usuarioLogado = "Levi";
-    } else if(user === "Mariana" && pass === "123mudar"){
+    } else if (userDigitado === "Mariana" && passDigitado === "123mudar") {
         usuarioLogado = "Mariana";
     } else {
-        return alert("Login inválido");
+        return alert("Login ou senha inválidos");
     }
 
-    document.getElementById("lblUsuario").innerText = usuarioLogado;
+    sessionStorage.setItem("_ss_op", btoa(usuarioLogado));
 
+    document.getElementById("lblUsuario").innerText = usuarioLogado;
     document.getElementById("login").classList.add("hidden");
     document.getElementById("app").classList.remove("hidden");
 
+    document.getElementById("user").value = "";
+    document.getElementById("pass").value = "";
+
     await syncLoadAll();
 };
-
 window.logout = function(){
     usuarioLogado = "";
     contatos = [];
