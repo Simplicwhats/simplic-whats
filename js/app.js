@@ -7,7 +7,7 @@ function toggleTempoRestritoVisibilidade(){
         .classList.toggle("hidden", status !== "restrito");
 }
 
-/* 🔥 LOGIN CORRIGIDO */
+/* 🔥 LOGIN 100% FIX */
 window.login = async function(){
     let user = document.getElementById("user").value.trim();
     let pass = document.getElementById("pass").value.trim();
@@ -20,9 +20,8 @@ window.login = async function(){
         return alert("Login inválido");
     }
 
-    sessionStorage.setItem("_ss_op", btoa(usuarioLogado));
-
     document.getElementById("lblUsuario").innerText = usuarioLogado;
+
     document.getElementById("login").classList.add("hidden");
     document.getElementById("app").classList.remove("hidden");
 
@@ -31,34 +30,38 @@ window.login = async function(){
 
 window.logout = function(){
     usuarioLogado = "";
-    whatsappAccounts = [];
     contatos = [];
+    whatsappAccounts = [];
     listaScripts = [];
+
     sessionStorage.clear();
 
-    document.getElementById("app").classList.add("hidden");
     document.getElementById("login").classList.remove("hidden");
+    document.getElementById("app").classList.add("hidden");
 };
 
-async function syncLoadAll(){
+window.syncLoadAll = async function(){
     if(!usuarioLogado) return;
 
-    let wa = await supabaseClient.from('whatsapp_accounts')
-        .select('*').eq('operator_name', usuarioLogado);
+    let wa = await supabaseClient.from("whatsapp_accounts")
+        .select("*")
+        .eq("operator_name", usuarioLogado);
 
     whatsappAccounts = wa.data || [];
 
-    let sc = await supabaseClient.from('message_scripts')
-        .select('*').eq('operator_name', usuarioLogado);
+    let sc = await supabaseClient.from("message_scripts")
+        .select("*")
+        .eq("operator_name", usuarioLogado);
 
     listaScripts = sc.data || [];
 
-    let ct = await supabaseClient.from('contacts_queue')
-        .select('*').eq('operator_name', usuarioLogado);
+    let ct = await supabaseClient.from("contacts_queue")
+        .select("*")
+        .eq("operator_name", usuarioLogado);
 
     contatos = ct.data || [];
 
     renderWA();
     renderScripts();
     renderContatos();
-}
+};
