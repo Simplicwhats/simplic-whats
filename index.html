@@ -1291,7 +1291,7 @@ async function dispararProximoWhatsappEfetivo(wa, contatoAlvo) {
     await supabaseClient.from('whatsapp_accounts').update({ sent: wa.sent + 1 }).eq('id', wa.id);
 
     // Formatação com a URL universal da API oficial de redirecionamento do WhatsApp Web
-    let urlDisparo = "https://api.whatsapp.com/send?phone=" + contatoAlvo.tel + "&text=" + encodeURIComponent(contatoAlvo.script_texto);
+    let urlDisparo = "https://web.whatsapp.com/send/?phone=" + contatoAlvo.tel + "&text=" + encodeURIComponent(contatoAlvo.script_texto);
     
     // Abertura forçada em nova aba sem herança de histórico para contornar restrições
     window.open(urlDisparo, "_blank");
