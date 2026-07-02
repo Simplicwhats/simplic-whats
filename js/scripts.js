@@ -1,4 +1,4 @@
-function abrirModalScriptNovo(){
+window.abrirModalScriptNovo = function(){
     document.getElementById("editScriptId").value = "";
     document.getElementById("nomeScriptModal").value = "";
     document.getElementById("textoScriptModal").value = "";
