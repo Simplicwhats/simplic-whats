@@ -67,7 +67,7 @@ function renderContatos(){
     
     if (pendentes.length === 0) {
         html = `<div class="small" style="text-align:center; padding:30px; color:var(--text-muted);">Nenhum número na fila de pendentes.</div>`;
-        document.getElementById("lista").innerHTML = html;
+        document.getElementById("lista").innerHTML = html;}
         return;
     }
 
