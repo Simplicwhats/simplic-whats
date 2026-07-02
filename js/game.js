@@ -3,7 +3,7 @@ let jogadorAtual = "X";
 let tabuleiroSessao = ["", "", "", "", "", "", "", "", ""];
 const vitoriasDisponiveis = [[0,1,2], [3,4,5], [6,7,8], [0,3,6], [1,4,7], [2,5,8], [0,4,8], [2,4,6]];
 
-function jogada(index) {
+window.jogada = function(index) {
     if (tabuleiroSessao[index] !== "" || !jogoAtActive || jogadorAtual !== "X") return;
     ejecutarMovimento(index, "X");
     if (jogoAtActive) {
@@ -48,7 +48,7 @@ function jogadaIA() {
 }
 
 function checarVitoria(simbolo) { return vitoriasDisponiveis.some(combo => combo.every(i => tabuleiroSessao[i] === simbolo)); }
-function resetJogo() {
+window.resetJogo = function() {
     tabuleiroSessao = ["", "", "", "", "", "", "", "", ""];
     jogoAtActive = true; jogadorAtual = "X";
     document.getElementById("statusJogo").innerText = "Sua vez! (Você é o X)";
