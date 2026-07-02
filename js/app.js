@@ -8,7 +8,7 @@ function toggleTempoRestritoVisibilidade(){
 }
 
 /* 🔥 LOGIN 100% FIX */
-window.login = async function () {
+function login() {
     let userDigitado = document.getElementById("user").value.trim();
     let passDigitado = document.getElementById("pass").value.trim();
 
@@ -29,8 +29,7 @@ window.login = async function () {
     document.getElementById("user").value = "";
     document.getElementById("pass").value = "";
 
-    await syncLoadAll();
-};
+    syncLoadAll();
 window.logout = function(){
     usuarioLogado = "";
     contatos = [];
