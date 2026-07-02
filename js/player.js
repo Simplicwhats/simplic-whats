@@ -5,7 +5,7 @@
     document.getElementById("abaMusicaLink").classList.toggle("hidden", aba !== 'link');
 }
 
-async function buscarMusicaPorNome() {
+window.buscarMusicaPorNome = async function() {
     let termo = document.getElementById("inputBuscaNome").value.trim();
     if (!termo) return alert("Digite o nome de uma música ou artista!");
 
@@ -39,7 +39,7 @@ async function buscarMusicaPorNome() {
     }
 }
 
-async function carregarMusicaUrl() {
+window.carregarMusicaUrl = async function() {
     let inputUrl = document.getElementById("inputLinkMusica").value.trim();
     if (!inputUrl) return alert("Por favor, digite a URL.");
     
@@ -55,7 +55,7 @@ async function carregarMusicaUrl() {
                 let matchIdDireto = dados.contents.match(/(?:playlist|album|track)\/(\d+)/);
                 if (matchIdDireto) {
                     let urlEmbedDeezer = `https://widget.deezer.com/widget/dark/${matchIdDireto[0]}?tracklist=true`;
-                    executarAudioSessao(urlEmbedDeezer, "Playlist Deezer", true);
+                    window.executarAudioSessao = function(urlEmbedDeezer, "Playlist Deezer", true);
                     return;
                 }
             }
@@ -71,7 +71,7 @@ async function carregarMusicaUrl() {
     
     if (matchYoutube && matchYoutube[2].length === 11) {
         let videoId = matchYoutube[2];
-        executarAudioSessao(`https://www.youtube.com/embed/${videoId}?autoplay=1&enablejsapi=1`, "Vídeo do YouTube", true);
+        window.executarAudioSessao = function(`https://www.youtube.com/embed/${videoId}?autoplay=1&enablejsapi=1`, "Vídeo do YouTube", true);
         return; 
     } 
     
@@ -82,20 +82,20 @@ async function carregarMusicaUrl() {
         let tipo = matchDeezer[1]; 
         let id = matchDeezer[2];
         let urlEmbedDeezer = `https://widget.deezer.com/widget/dark/${tipo}/${id}?tracklist=true`;
-        executarAudioSessao(urlEmbedDeezer, `Deezer ${tipo.charAt(0).toUpperCase() + tipo.slice(1)}`, true);
+        window.executarAudioSessao = function(urlEmbedDeezer, `Deezer ${tipo.charAt(0).toUpperCase() + tipo.slice(1)}`, true);
         return; 
     } 
     
     if (inputUrl.includes("http://") || inputUrl.includes("https://")) {
-        executarAudioSessao(inputUrl, "Link de Áudio Direto", false);
+        window.executarAudioSessao = function(inputUrl, "Link de Áudio Direto", false);
         return;
     } 
     
     alert("Não consegui identificar um link válido do YouTube, Deezer ou áudio direto.");
 }
 
-function carregarLofiPadrao() {
-    executarAudioSessao("https://stream.zeno.fm/0r0xa792kwzuv", "Rádio Lofi Chill", false);
+window.carregarLofiPadrao = function() {
+    window.executarAudioSessao = function("https://stream.zeno.fm/0r0xa792kwzuv", "Rádio Lofi Chill", false);
 }
 
 function executarAudioSessao(urlAudio, nomeRotulo, isIframe = false) {
@@ -156,7 +156,7 @@ function executarAudioSessao(urlAudio, nomeRotulo, isIframe = false) {
     }
 }
 
-function alternarPlayAudio() {
+window.alternarPlayAudio = function() {
     let player = document.getElementById("playerAudioNativo");
     let btn = document.getElementById("btnPlayPauseCustom");
     if (player.paused) {
@@ -166,7 +166,7 @@ function alternarPlayAudio() {
     }
 }
 
-function fecharMiniPlayer() {
+window.fecharMiniPlayer = function() {
     if(previewTimerInterval) clearInterval(previewTimerInterval);
     let player = document.getElementById("playerAudioNativo");
     player.pause(); 
