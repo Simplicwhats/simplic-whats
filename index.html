@@ -1,0 +1,272 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SIMPLIC Whatsapp - Dashboard Premium</title>
+    <link rel="icon" href="data:,">
+    
+    <!-- Link para folha de estilos externa -->
+    <link rel="stylesheet" href="css/style.css">
+    
+    <!-- SDK Oficial do Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<div id="login" class="login">
+    <div class="box">
+        <h2>SIMPLIC Whatsapp</h2>
+        <p>Painel de Controle Operacional</p>
+        <input id="user" placeholder="Usuário">
+        <input id="pass" type="password" placeholder="Senha">
+        <button class="green" style="width:100%; margin-top: 18px;" onclick="login()">Entrar no Sistema</button>
+    </div>
+</div>
+
+<div id="app" class="hidden">
+    <div class="container">
+
+        <div class="header-app">
+            <h1>SIMPLIC</h1>
+            <div class="user-badge">
+                <span style="width: 8px; height: 8px; background: #10b981; border-radius: 50%;"></span>
+                <span>Operador: <strong id="lblUsuario" style="color: var(--primary);">---</strong></span>
+                <span style="color: rgba(255,255,255,0.15)">|</span>
+                <a href="#" onclick="abrirModal('modalJogo')" style="color: var(--blue); font-size: 12px; text-decoration: none; font-weight: 600;">🎮 Mini-Game</a>
+                <span style="color: rgba(255,255,255,0.15)">|</span>
+                <a href="#" onclick="abrirModal('modalMusica')" style="color: var(--orange); font-size: 12px; text-decoration: none; font-weight: 600;">🎵 Player</a>
+                <span style="color: rgba(255,255,255,0.15)">|</span>
+                <a href="#" onclick="logout()" style="color: var(--red); font-size: 12px; text-decoration: none; font-weight: 600;">Sair</a>
+            </div>
+        </div>
+
+        <div class="card" style="margin-bottom: 25px;">
+            <h3>📱 Instâncias de WhatsApp</h3>
+            <div class="flex-group" style="align-items: flex-end; flex-wrap: wrap;">
+                <div style="flex: 2; min-width: 200px;">
+                    <label class="small">Número do WhatsApp</label>
+                    <input id="waNumber" placeholder="Ex: 5511999999999" style="margin-top:4px;">
+                </div>
+                <div style="flex: 1; min-width: 130px;">
+                    <label class="small">Função</label>
+                    <select id="waRole" style="margin-top:4px;">
+                        <option value="preventive">Preventivo</option>
+                        <option value="acoes">Ações</option>
+                        <option value="reserva">Reserva</option>
+                    </select>
+                </div>
+                <div style="flex: 1; min-width: 140px;">
+                    <label class="small">Navegador</label>
+                    <select id="waBrowser" style="margin-top:4px;">
+                        <option value="chrome">Google Chrome</option>
+                        <option value="edge">Microsoft Edge</option>
+                    </select>
+                </div>
+                <button class="green" onclick="addWA()" style="margin-top:0; height: 45px; white-space: nowrap;">+ Conectar</button>
+            </div>
+            <div id="waList" style="margin-top: 15px;"></div>
+        </div>
+
+        <div class="grid">
+            
+            <div style="display: flex; flex-direction: column; gap: 25px;">
+                <div class="card" style="display: flex; flex-direction: column; flex: 1;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h3 style="margin: 0;">👥 Fila de Contatos Pendentes</h3>
+                        <button class="green" onclick="abrirModalContatos()" style="margin: 0; padding: 6px 12px; font-size: 12px;">+ Importar Lista</button>
+                    </div>
+                    <hr style="margin: 5px 0 12px 0;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <label class="small">Clientes aguardando envio</label>
+                        <a href="#" onclick="limparContatos()" style="color: var(--red); font-size: 11px; text-decoration: none;">Limpar Fila</a>
+                    </div>
+                    <div id="lista" style="margin-top: 12px; min-height: 200px; max-height: 320px; overflow-y: auto; background: rgba(0,0,0,0.15); padding: 8px; border-radius: 8px;"></div>
+                    
+                    <div style="margin-top: 20px; border-top: 1px solid var(--border-color); padding-top: 15px;">
+                        <button class="green" style="width: 100%; padding: 16px; font-size: 16px; letter-spacing: 0.5px; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);" onclick="proximo()">
+                            🚀 Abrir e Chamar Próximo Cliente
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h3 style="margin: 0;">📝 Mensagens & Scripts</h3>
+                    <button class="blue" onclick="abrirModalScriptNovo()" style="margin: 0; padding: 6px 12px; font-size: 12px;">+ Novo Script</button>
+                </div>
+                <hr style="margin: 10px 0;">
+                <label class="small">Seus Scripts Selecionáveis</label>
+                <div id="scriptsContainerList" style="margin-top: 8px; max-height: 150px; overflow-y: auto;"></div>
+                <div class="small" style="margin-top: 18px; font-weight: 600;">Visualização Completa do Texto:</div>
+                <div id="preview"></div>
+            </div>
+
+        </div>
+
+        <div id="containerMiniPlayer" class="card premium-player hidden" style="margin-top: 25px; display: flex; flex-direction: column; gap: 12px;">
+            <div style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
+                <h3 style="margin:0; display:flex; align-items:center; gap:8px;">
+                    <span style="font-size:18px;">🎵</span> 
+                    <span>Tocando agora: <span id="lblNomeMusicaTocando" style="color: var(--orange); font-size: 14px; font-weight:700;">Música</span></span>
+                </h3>
+                <button onclick="fecharMiniPlayer()" class="btn-icon" style="color: var(--red); font-size: 16px; padding:4px; background:rgba(239,68,68,0.1); border-radius:50%; width:24px; height:24px;">✕</button>
+            </div>
+            
+            <div id="wrapperAudioNativo" style="display: flex; align-items: center; gap: 15px; background: rgba(0,0,0,0.3); padding: 12px; border-radius: 10px; border: 1px solid var(--border-color); flex-wrap: wrap;">
+                <audio id="playerAudioNativo" controls style="flex: 1; height: 32px; min-width: 200px;"></audio>
+                <div style="display: flex; gap: 8px;">
+                    <button onclick="alternarPlayAudio()" id="btnPlayPauseCustom" class="orange" style="margin: 0; padding: 6px 14px; font-size: 13px;">⏸ Pausar</button>
+                </div>
+            </div>
+
+            <div id="wrapperAudioYoutube" class="hidden" style="border-radius:10px; overflow:hidden; border:1px solid var(--border-color); background:#000; display:flex; justify-content:center;">
+                <iframe 
+                    id="playerYoutubeIframe" 
+                    width="100%" 
+                    height="180" 
+                    src="" 
+                    title="Player de Mídia" 
+                    frameborder="0" 
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen">
+                 frame>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- MODAIS -->
+<div id="modalContatos" class="modal-overlay hidden">
+    <div class="modal-content">
+        <h3>Importar Contatos para acionar</h3>
+        <label class="small">Escolha o Script para estes números:</label>
+        <select id="modalSelectScriptDefinido" style="margin-top:4px; margin-bottom:12px;"></select>
+        <label class="small">Cole a lista (Formatos: 5511999999999;Nome ou apenas o número)</label>
+        <textarea id="telefonesInputModal" rows="6" placeholder="5511999999999;João&#10;5511888888888" style="margin-top:4px;"></textarea>
+        <div class="flex-group" style="margin-top: 20px;">
+            <button class="gray" onclick="fecharModal('modalContatos')" style="flex:1;">Cancelar</button>
+            <button class="green" onclick="salvarContatos()" style="flex:1;">Inserir na Fila</button>
+        </div>
+    </div>
+</div>
+
+<div id="modalScript" class="modal-overlay hidden">
+    <div class="modal-content">
+        <h3 id="tituloScriptModal">Criar Novo Script</h3>
+        <input type="hidden" id="editScriptId" value="">
+        <label class="small">Título / Identificação do Script</label>
+        <input id="nomeScriptModal" placeholder="Ex: Cobrança Atraso 5 dias" style="margin-top:4px; margin-bottom:12px;">
+        <label class="small">Mensagem de texto (Use "{nome}" para personalizar variáveis de envio)</label>
+        <textarea id="textoScriptModal" rows="7" placeholder="Olá {nome}, tudo bem? Vimos aqui..." style="margin-top:4px;"></textarea>
+        <div class="flex-group" style="margin-top: 20px;">
+            <button class="gray" onclick="fecharModal('modalScript')" style="flex:1;">Cancelar</button>
+            <button class="blue" onclick="salvarScript()" style="flex:1;">Salvar Script</button>
+        </div>
+    </div>
+</div>
+
+<div id="modalEditar" class="modal-overlay hidden">
+    <div class="modal-content">
+        <h3>Configurações da Conta</h3>
+        <label class="small">Número do WhatsApp</label>
+        <input id="editModalNumero" placeholder="Ex: 5511999999999" style="margin-top:4px; margin-bottom:12px;">
+        <label class="small">Quantidade de Acionamentos</label>
+        <input id="editModalSent" type="number" min="0" style="margin-top:4px; margin-bottom:12px;">
+        <div class="flex-group" style="margin-top:0; margin-bottom:12px; gap:12px;">
+            <div style="flex:1;">
+                <label class="small">Função</label>
+                <select id="editModalRole" style="margin-top:4px;">
+                    <option value="preventivo">Preventivo</option>
+                    <option value="acoes">Ações</option>
+                    <option value="reserva">Reserva</option>
+                </select>
+            </div>
+            <div style="flex:1;">
+                <label class="small">Navegador</label>
+                <select id="editModalBrowser" style="margin-top:4px;">
+                    <option value="chrome">Google Chrome</option>
+                    <option value="edge">Microsoft Edge</option>
+                </select>
+            </div>
+        </div>
+        <label class="small">Status do Canal</label>
+        <select id="editModalStatus" onchange="toggleTempoRestritoVisibilidade()" style="margin-top:4px; margin-bottom:12px;">
+            <option value="ativo">Ativo</option>
+            <option value="restrito">Restrito</option>
+            <option value="banido">Banido</option>
+        </select>
+        <div id="containerTempoRestrito" class="hidden">
+            <label class="small">Tempo de Restrição</label>
+            <input id="editModalTempo" placeholder="Ex: 3h40m, 45m ou 2 (horas)" style="margin-top:4px;">
+        </div>
+        <div class="flex-group" style="margin-top: 24px;">
+            <button class="gray" onclick="fecharModal('modalEditar')" style="flex:1;">Cancelar</button>
+            <button class="green" id="btnSalvarEdicao" style="flex:1;">Salvar Alterações</button>
+        </div>
+    </div>
+</div>
+
+<div id="modalMusica" class="modal-overlay hidden">
+    <div class="modal-content">
+        <h3>🎵 Player de Música</h3>
+        <div class="modal-tabs">
+            <button id="tabBtnBusca" class="modal-tab-btn active" onclick="mudarAbaMusica('busca')">Buscar Música</button>
+            <button id="tabBtnLink" class="modal-tab-btn" onclick="mudarAbaMusica('link')">URL / YouTube</button>
+        </div>
+        <div id="abaMusicaBusca">
+            <label class="small">Digite a música ou o nome do artista:</label>
+            <div class="flex-group" style="margin-top:4px; margin-bottom:10px;">
+                <input id="inputBuscaNome" placeholder="Ex: Alok, Coldplay..." style="margin-top:0;">
+                <button class="blue" onclick="buscarMusicaPorNome()" style="margin-top:0; height: 45px;">Buscar</button>
+            </div>
+            <div id="containerResultadosBusca" style="max-height: 180px; overflow-y: auto; margin-bottom: 15px;">
+                <div class="small" style="color:var(--text-muted); text-align:center; padding:10px;">Resultados...</div>
+            </div>
+        </div>
+        <div id="abaMusicaLink" class="hidden">
+            <label class="small">Cole a URL do áudio, link do YouTube ou Deezer:</label>
+            <input id="inputLinkMusica" placeholder="Ex: https://www.youtube.com/watch?v=..." style="margin-top:4px; margin-bottom:12px;">
+            <button class="green" onclick="carregarMusicaUrl()" style="width: 100%; margin-top:0;">Tocar Mídia</button>
+        </div>
+        <div style="background: rgba(245, 158, 11, 0.08); padding: 10px; border-radius: 8px; margin-bottom: 15px; border: 1px solid rgba(245, 158, 11, 0.15);">
+            <button class="orange" onclick="carregarLofiPadrao()" style="width: 100%; font-size: 12px; padding: 8px; margin-top: 0;">⚡ Ouvir Rádio Lofi Chill</button>
+        </div>
+        <button class="gray" onclick="fecharModal('modalMusica')" style="width:100%;">Fechar Janela</button>
+    </div>
+</div>
+
+<div id="modalJogo" class="modal-overlay hidden">
+    <div class="modal-content" style="width: 320px; text-align: center;">
+        <h3>🎮 Jogo da Velha</h3>
+        <div id="tabuleiro" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 15px 0;">
+            <div class="quadrado" onclick="jogada(0)" style="background: var(--bg-input); height: 70px; display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: bold; cursor: pointer; border-radius: 8px; border: 1px solid var(--border-color);"></div>
+            <div class="quadrado" onclick="jogada(1)" style="background: var(--bg-input); height: 70px; display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: bold; cursor: pointer; border-radius: 8px; border: 1px solid var(--border-color);"></div>
+            <div class="quadrado" onclick="jogada(2)" style="background: var(--bg-input); height: 70px; display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: bold; cursor: pointer; border-radius: 8px; border: 1px solid var(--border-color);"></div>
+            <div class="quadrado" onclick="jogada(3)" style="background: var(--bg-input); height: 70px; display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: bold; cursor: pointer; border-radius: 8px; border: 1px solid var(--border-color);"></div>
+            <div class="quadrado" onclick="jogada(4)" style="background: var(--bg-input); height: 70px; display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: bold; cursor: pointer; border-radius: 8px; border: 1px solid var(--border-color);"></div>
+            <div class="quadrado" onclick="jogada(5)" style="background: var(--bg-input); height: 70px; display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: bold; cursor: pointer; border-radius: 8px; border: 1px solid var(--border-color);"></div>
+            <div class="quadrado" onclick="jogada(6)" style="background: var(--bg-input); height: 70px; display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: bold; cursor: pointer; border-radius: 8px; border: 1px solid var(--border-color);"></div>
+            <div class="quadrado" onclick="jogada(7)" style="background: var(--bg-input); height: 70px; display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: bold; cursor: pointer; border-radius: 8px; border: 1px solid var(--border-color);"></div>
+            <div class="quadrado" onclick="jogada(8)" style="background: var(--bg-input); height: 70px; display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: bold; cursor: pointer; border-radius: 8px; border: 1px solid var(--border-color);"></div>
+        </div>
+        <div id="statusJogo" class="small" style="margin-bottom: 15px; font-weight: 600; color: var(--primary);">Sua vez! (Você é o X)</div>
+        <div class="flex-group">
+            <button class="gray" onclick="fecharModal('modalJogo')" style="flex:1;">Fechar</button>
+            <button class="blue" onclick="resetJogo()" style="flex:1;">Reiniciar</button>
+        </div>
+    </div>
+</div>
+
+<!-- IMPORTAÇÃO DA LÓGICA EM MÓDULOS NA ORDEM CORRETA DE DEPENDÊNCIAS -->
+<script src="js/supabase-db.js"></script>
+<script src="js/whatsapp.js"></script>
+<script src="js/contacts.js"></script>
+<script src="js/scripts.js"></script>
+<script src="js/player.js"></script>
+<script src="js/game.js"></script>
+<script src="js/app.js"></script>
+
+</body>
+</html>
