@@ -1,5 +1,5 @@
-function abrirModal(id){ document.getElementById(id).classList.remove("hidden"); }
-function fecharModal(id){ document.getElementById(id).classList.add("hidden"); }
+window.abrirModal = function(id) { document.getElementById(id).classList.remove("hidden"); }
+window.fecharModal = function(id) { document.getElementById(id).classList.add("hidden"); }
 
 function toggleTempoRestritoVisibilidade(){
     let status = document.getElementById("editModalStatus").value;
@@ -8,7 +8,7 @@ function toggleTempoRestritoVisibilidade(){
 }
 
 /* 🔥 LOGIN 100% FIX */
-function login() {
+window.login = async function(){
     let userDigitado = document.getElementById("user").value.trim();
     let passDigitado = document.getElementById("pass").value.trim();
 
