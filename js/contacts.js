@@ -13,7 +13,7 @@ function abrirModalContatos(){
     abrirModal("modalContatos");
 }
 
-async function salvarContatos(){
+window.salvarContatos = async function(){
     let idx = document.getElementById("modalSelectScriptDefinido").value;
     if(idx === "") return alert("Selecione script");
 
@@ -41,9 +41,9 @@ async function salvarContatos(){
 
     fecharModal("modalContatos");
     await syncLoadAll();
-}
+};
 
-function renderContatos(){
+window.renderContatos = function(){
     let pendentes = contatos.filter(c=>c.status==="Pendente");
 
     let html = "";
@@ -62,11 +62,11 @@ function renderContatos(){
     });
 
     document.getElementById("lista").innerHTML = html;
-}
+};
 
-async function removerContatoFila(id){
+window.removerContatoFila = async function(id){
     await supabaseClient.from("contacts_queue")
         .delete().eq("id",id);
 
     await syncLoadAll();
-}
+};
