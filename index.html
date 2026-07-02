@@ -1370,32 +1370,116 @@ function fecharMiniPlayer() {
     document.getElementById("visualizerEqualizer").classList.remove("playing");
 }
 
-/* JOGO DA VELHA */
-let jogoAtActive = true; let tabuleiroSessao = ["", "", "", "", "", "", "", "", ""];
+/* JOGO DA VELHA COMPLETO */
+
+let jogoAtActive = true;
+let tabuleiroSessao = ["", "", "", "", "", "", "", "", ""];
+
+const linhasVitoria = [
+    [0,1,2],[3,4,5],[6,7,8],
+    [0,3,6],[1,4,7],[2,5,8],
+    [0,4,8],[2,4,6]
+];
+
+function escolherJogadaIA() {
+
+    // IA tenta ganhar
+    for (let l of linhasVitoria) {
+        let valores = l.map(i => tabuleiroSessao[i]);
+
+        if (valores.filter(v => v === "O").length === 2 && valores.includes("")) {
+            return l[valores.indexOf("")];
+        }
+    }
+
+    // IA bloqueia jogador
+    for (let l of linhasVitoria) {
+        let valores = l.map(i => tabuleiroSessao[i]);
+
+        if (valores.filter(v => v === "X").length === 2 && valores.includes("")) {
+            return l[valores.indexOf("")];
+        }
+    }
+
+    // Centro
+    if (tabuleiroSessao[4] === "") return 4;
+
+    // Cantos
+    let cantos = [0,2,6,8].filter(i => tabuleiroSessao[i] === "");
+    if (cantos.length) {
+        return cantos[Math.floor(Math.random() * cantos.length)];
+    }
+
+    // Laterais
+    let laterais = [1,3,5,7].filter(i => tabuleiroSessao[i] === "");
+    if (laterais.length) {
+        return laterais[Math.floor(Math.random() * laterais.length)];
+    }
+
+    return null;
+}
+
 function jogada(index) {
+
     if (tabuleiroSessao[index] !== "" || !jogoAtActive) return;
+
+    // Jogador
     tabuleiroSessao[index] = "X";
     document.querySelectorAll(".quadrado")[index].innerText = "X";
-    if(checarVitoria("X")) { document.getElementById("statusJogo").innerText = "🎉 Vitória!"; jogoAtActive = false; return; }
-    
-    let vazios = tabuleiroSessao.map((v, i) => v === "" ? i : null).filter(v => v !== null);
-    if(vazios.length > 0) {
-        let ia = vazios[Math.floor(Math.random() * vazios.length)];
+
+    if (checarVitoria("X")) {
+        document.getElementById("statusJogo").innerText = "🎉 Vitória!";
+        jogoAtActive = false;
+        return;
+    }
+
+    if (!tabuleiroSessao.includes("")) {
+        document.getElementById("statusJogo").innerText = "🤝 Empate!";
+        jogoAtActive = false;
+        return;
+    }
+
+    document.getElementById("statusJogo").innerText = "🤖 IA pensando...";
+
+    // IA joga
+    let ia = escolherJogadaIA();
+
+    if (ia !== null) {
+
         tabuleiroSessao[ia] = "O";
         document.querySelectorAll(".quadrado")[ia].innerText = "O";
-        if(checarVitoria("O")) { document.getElementById("statusJogo").innerText = "🤖 Fim de jogo para você."; jogoAtActive = false; }
+
+        if (checarVitoria("O")) {
+            document.getElementById("statusJogo").innerText = "🤖 Fim de jogo para você.";
+            jogoAtActive = false;
+            return;
+        }
+
+        if (!tabuleiroSessao.includes("")) {
+            document.getElementById("statusJogo").innerText = "🤝 Empate!";
+            jogoAtActive = false;
+            return;
+        }
     }
-}
-function checarVitoria(s) {
-    const v = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
-    return v.some(c => c.every(i => tabuleiroSessao[i] === s));
-}
-function resetJogo() {
-    tabuleiroSessao.fill(""); jogoAtActive = true;
-    document.querySelectorAll(".quadrado").forEach(q => q.innerText = "");
+
     document.getElementById("statusJogo").innerText = "Sua vez! (Você é o X)";
 }
 
+function checarVitoria(s) {
+    return linhasVitoria.some(c =>
+        c.every(i => tabuleiroSessao[i] === s)
+    );
+}
+
+function resetJogo() {
+    tabuleiroSessao.fill("");
+    jogoAtActive = true;
+
+    document.querySelectorAll(".quadrado").forEach(q => q.innerText = "");
+
+    document.getElementById("statusJogo").innerText =
+        "Sua vez! (Você é o X)";
+}
 // LOOP REAL-TIME
 setInterval(async () => {
     if (!usuarioLogado) return;
