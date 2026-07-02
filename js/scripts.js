@@ -5,7 +5,7 @@ function abrirModalScriptNovo(){
     abrirModal("modalScript");
 }
 
-async function salvarScript(){
+window.salvarScript = async function(){
     let id = document.getElementById("editScriptId").value;
     let nome = document.getElementById("nomeScriptModal").value;
     let texto = document.getElementById("textoScriptModal").value;
@@ -22,9 +22,9 @@ async function salvarScript(){
 
     fecharModal("modalScript");
     await syncLoadAll();
-}
+};
 
-function renderScripts(){
+window.renderScripts = function(){
     let html = "";
 
     listaScripts.forEach(s=>{
@@ -35,9 +35,9 @@ function renderScripts(){
     });
 
     document.getElementById("scriptsContainerList").innerHTML = html;
-}
+};
 
-async function selectScript(id){
+window.selectScript = async function(id){
     await supabaseClient.from("message_scripts")
         .update({selected:false})
         .eq("operator_name",usuarioLogado);
@@ -47,4 +47,4 @@ async function selectScript(id){
         .eq("id",id);
 
     await syncLoadAll();
-}
+};
