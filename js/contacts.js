@@ -1,4 +1,4 @@
-function abrirModalContatos(){
+window.abrirModalContatos = function() {
     let select = document.getElementById("modalSelectScriptDefinido");
     select.innerHTML = "";
 
