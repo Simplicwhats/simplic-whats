@@ -783,10 +783,8 @@ let whatsappAccounts = [];
 let listaScripts = [];
 let contaEditandoIndex = null;
 let usuarioLogado = "";
-let abaWhatsAppReferencia = null; 
 let previewTimerInterval = null;
 
-// NOVAS VARIÁVEIS DE CONTROLE UI/UX
 let filtroStatusAtual = 'todos';
 let regressiveTimerPointer = null;
 let segundosRestantesRegressivo = 5;
@@ -892,7 +890,6 @@ async function syncLoadAll() {
     }
 }
 
-// ATUALIZAÇÃO DOS CARD METRICS (KPIs)
 function renderKPIs() {
     document.getElementById("kpiTotalFila").innerText = contatos.length;
     document.getElementById("kpiEnviados").innerText = contatos.filter(c => c.status === "Enviado").length;
@@ -900,15 +897,14 @@ function renderKPIs() {
     document.getElementById("kpiRestritos").innerText = whatsappAccounts.filter(w => w.status === "restrito" || w.status === "banido").length;
 }
 
-// VALIDAÇÃO INTELIGENTE DE TELEFONE (Anti-Erros de Formatação)
 function limparEValidarTelefone(tel) {
-    let limpo = tel.replace(/\D/g, ""); // Remove tudo que não for número
+    let limpo = tel.replace(/\D/g, "");
     if (limpo.length === 11 && limpo.startsWith("9")) {
-        limpo = "55" + limpo; // Adiciona DDI Brasil se omitido mas tiver 11 digitos comuns
+        limpo = "55" + limpo;
     } else if (limpo.length === 11 && !limpo.startsWith("55")) {
         limpo = "55" + limpo;
     } else if (limpo.length === 9) {
-        limpo = "5511" + limpo; // Fallback para SP caso venha sem DDD
+        limpo = "5511" + limpo;
     }
     return limpo;
 }
@@ -944,9 +940,8 @@ function renderWA(){
         let statusText = w.status;
         let alarmTag = "";
 
-        // ALERTA DE META DE SEGURANÇA (Evitar Banimento)
         if (w.sent >= 50) {
-            alarmTag = `<span class="badge-info safety-alert">⚠️ AQUICIMENTO MÁXIMO (${w.sent}/50)</span>`;
+            alarmTag = `<span class="badge-info safety-alert">⚠️ AQUECIMENTO MÁXIMO (${w.sent}/50)</span>`;
         }
 
         if(w.status === "restrito"){
@@ -1001,7 +996,7 @@ async function alterarStatusRapido(id, i, statusAlvo) {
         toggleTempoRestritoVisibilidade();
     } else {
         await supabaseClient.from('whatsapp_accounts').update({ status: statusAlvo, restricted_until: null }).eq('id', id);
-        showToast("Status atualizado.");
+        showToast("Status updated.");
         await syncLoadAll();
     }
 }
@@ -1027,7 +1022,7 @@ function abrirEditarModal(i) {
         if(novoStatus === "restrito") {
             let inputTempo = document.getElementById("editModalTempo").value;
             if(inputTempo) {
-                let milissegundosTotais = parseFloat(inputTempo) * 3600000; // Tratando como horas direto por padrão simplificado
+                let milissegundosTotais = parseFloat(inputTempo) * 3600000;
                 if(milissegundosTotais > 0) restUntilValue = Date.now() + milissegundosTotais;
             }
         }
@@ -1055,7 +1050,6 @@ async function removeWA(id){
     await syncLoadAll();
 }
 
-/* FILA DE CONTATOS COM FILTROS AVANÇADOS & BUSCA */
 function mudarFiltroLista(statusAlvo) {
     filtroStatusAtual = statusAlvo;
     let abas = ['filterTabAll', 'filterTabPendente', 'filterTabEnviado', 'filterTabErro'];
@@ -1097,14 +1091,22 @@ function renderContatos(dadosFila) {
 
     dadosFila.forEach((c) => {
         let badgeColor = c.status === 'Enviado' ? 'var(--blue)' : c.status === 'Erro' ? 'var(--red)' : 'var(--text-muted)';
+        
+        // Geração do seletor inline de scripts para troca rápida
+        let scriptOptions = listaScripts.map(s => `<option value="${s.id}" ${c.script_nome === s.nome ? 'selected' : ''}>${s.nome}</option>`).join('');
+
         html += `
         <div class="row" style="padding: 10px 6px;">
             <div>
                 <span style="font-weight:600; color:#fff;">${c.tel}</span>
-                <div class="small" style="color: var(--purple); font-size:11px; margin-top:2px;">📋 Script: ${c.script_nome || 'Padrão'}</div>
+                <div class="small" style="color: var(--purple); font-size:11px; margin-top:2px; display:flex; align-items:center; gap:4px;">
+                    📋 Script: 
+                    <select onchange="alterarScriptContatoFila(${c.id}, this.value)" style="width:auto; padding:2px; margin:0; font-size:11px; height:22px; background:rgba(0,0,0,0.4); border-radius:4px;">
+                        ${scriptOptions || '<option>Nenhum cadastrado</option>'}
+                    </select>
+                </div>
             </div>
             <div class="action-buttons">
-                <!-- DROPDOWN DE LOG DE ERRO DINÂMICO -->
                 <select class="select-status-inline" onchange="atualizarStatusContatoManual(${c.id}, this.value)" style="background-color: rgba(0,0,0,0.3); border-color: ${badgeColor}; color: #fff;">
                     <option value="Pendente" ${c.status === 'Pendente' ? 'selected' : ''}>Pendente</option>
                     <option value="Enviado" ${c.status === 'Enviado' ? 'selected' : ''}>Enviado</option>
@@ -1115,6 +1117,20 @@ function renderContatos(dadosFila) {
         </div>`;
     });
     document.getElementById("lista").innerHTML = html;
+}
+
+// TROCA DINÂMICA DE SCRIPT DO NÚMERO
+async function alterarScriptContatoFila(contatoId, scriptId) {
+    let scriptObj = listaScripts.find(s => s.id == scriptId);
+    if (!scriptObj) return;
+
+    await supabaseClient.from('contacts_queue').update({
+        script_nome: scriptObj.nome,
+        script_texto: scriptObj.texto
+    }).eq('id', contatoId);
+
+    showToast("Script do contato atualizado.");
+    await syncLoadAll();
 }
 
 async function atualizarStatusContatoManual(id, novoStatus) {
@@ -1148,7 +1164,7 @@ async function salvarContatos(){
 
     await supabaseClient.from('contacts_queue').insert(packageData);
     fecharModal("modalContatos");
-    showToast(`${packageData.length} Contatos higienizados e adicionados.`);
+    showToast(`${packageData.length} Contatos adicionados.`);
     await syncLoadAll();
 }
 
@@ -1235,7 +1251,7 @@ async function removerScript(id){
     await syncLoadAll();
 }
 
-/* TIMER REGRESSIVO & AUTOMAÇÃO COMPLETA DE ENVIO */
+/* TIMER REGRESSIVO & DISPARO SEGURO */
 function iniciarContagemEnvio() {
     let wa = whatsappAccounts.find(x => x.selected);
     if(!wa || wa.status === "banido") return showToast("Verifique sua instância ativa antes de enviar.", "error");
@@ -1243,7 +1259,6 @@ function iniciarContagemEnvio() {
     let proximoContato = contatos.find(c => c.status === "Pendente");
     if(!proximoContato) return showToast("Nenhum contato pendente na fila.", "warning");
 
-    // Limpeza de timers antigos e exibição da interface regressiva
     cancelarEnvioRegressivo();
     segundosRestantesRegressivo = 5;
     document.getElementById("lblRegressivoSegundo").innerText = segundosRestantesRegressivo;
@@ -1269,20 +1284,19 @@ function cancelarEnvioRegressivo() {
     document.getElementById("btnProximoChamado").disabled = false;
 }
 
+// ATUALIZAÇÃO AUTOMÁTICA E DISPARO SEM BLOQUEIO
 async function dispararProximoWhatsappEfetivo(wa, contatoAlvo) {
-    let urlDisparo = "https://web.whatsapp.com/send?phone=" + contatoAlvo.tel + "&text=" + encodeURIComponent(contatoAlvo.script_texto);
-    
-    if (!abaWhatsAppReferencia || abaWhatsAppReferencia.closed) {
-        abaWhatsAppReferencia = window.open("", "whatsapp_janela_unica_simplic");
-    }
-
+    // Atualização imediata no Supabase antes de abrir o link para evitar duplicações
     await supabaseClient.from('contacts_queue').update({ status: 'Enviado' }).eq('id', contatoAlvo.id);
     await supabaseClient.from('whatsapp_accounts').update({ sent: wa.sent + 1 }).eq('id', wa.id);
 
-    abaWhatsAppReferencia.location.href = urlDisparo;
-    abaWhatsAppReferencia.focus();
+    // Formatação com a URL universal da API oficial de redirecionamento do WhatsApp Web
+    let urlDisparo = "https://api.whatsapp.com/send?phone=" + contatoAlvo.tel + "&text=" + encodeURIComponent(contatoAlvo.script_texto);
     
-    showToast("Redirecionado com sucesso!");
+    // Abertura forçada em nova aba sem herança de histórico para contornar restrições
+    window.open(urlDisparo, "_blank");
+    
+    showToast("Enviado e atualizado automaticamente!");
     await syncLoadAll();
 }
 
@@ -1327,7 +1341,7 @@ function ejecutarAudioSessao(urlAudio, nome, isIframe) {
     let playerNativo = document.getElementById("playerAudioNativo");
     document.getElementById("lblNomeMusicaTocando").innerText = nome;
     document.getElementById("containerMiniPlayer").classList.remove("hidden");
-    document.getElementById("visualizerEqualizer").classList.add("playing"); // Ativa onda sonora
+    document.getElementById("visualizerEqualizer").classList.add("playing");
 
     if(isIframe) {
         playerNativo.pause();
@@ -1356,7 +1370,7 @@ function fecharMiniPlayer() {
     document.getElementById("visualizerEqualizer").classList.remove("playing");
 }
 
-/* MINI JOGO: JOGO DA VELHA */
+/* JOGO DA VELHA */
 let jogoAtActive = true; let tabuleiroSessao = ["", "", "", "", "", "", "", "", ""];
 function jogada(index) {
     if (tabuleiroSessao[index] !== "" || !jogoAtActive) return;
@@ -1382,7 +1396,7 @@ function resetJogo() {
     document.getElementById("statusJogo").innerText = "Sua vez! (Você é o X)";
 }
 
-// LOOP REAL-TIME DE RESTRIÇÕES
+// LOOP REAL-TIME
 setInterval(async () => {
     if (!usuarioLogado) return;
     whatsappAccounts.forEach((w, i) => {
