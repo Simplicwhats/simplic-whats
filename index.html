@@ -1260,7 +1260,7 @@ function iniciarContagemEnvio() {
     if(!proximoContato) return showToast("Nenhum contato pendente na fila.", "warning");
 
     cancelarEnvioRegressivo();
-    segundosRestantesRegressivo = 5;
+    segundosRestantesRegressivo = 3;
     document.getElementById("lblRegressivoSegundo").innerText = segundosRestantesRegressivo;
     document.getElementById("timerContainerBanner").classList.remove("hidden");
     document.getElementById("btnProximoChamado").disabled = true;
