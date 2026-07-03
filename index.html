@@ -842,17 +842,20 @@ async function login(){
     let userDigitado = document.getElementById("user").value.trim();
     let passDigitado = document.getElementById("pass").value.trim();
 
+    // Exemplo de uso correto: o await DEVE estar dentro dos blocos da função async
+    // let resposta = await minhaApi.validar(userDigitado); 
+
     if (userDigitado === "Levi" && passDigitado === "2104") {
         usuarioLogado = "Levi";
     } else if (userDigitado === "Mariana" && passDigitado === "123mudar") {
         usuarioLogado = "Mariana";
-    } else if (userDigitado === "Maria" && passDigitado === "duda2025") { // <-- Novo login adicionado aqui
+    } else if (userDigitado === "Maria" && passDigitado === "duda2025") {
         usuarioLogado = "Maria";
     } else {
         showToast("Login ou senha incorretos!", "error");
         return;
     }
-}
+} // <-- Garanta que essa chave fecha a função corretamente!
 
     sessionStorage.setItem("_ss_op", btoa(usuarioLogado));
     document.getElementById("lblUsuario").innerText = usuarioLogado;
