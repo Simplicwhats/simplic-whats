@@ -838,12 +838,9 @@ function toggleTempoRestritoVisibilidade() {
     document.getElementById("containerTempoRestrito").classList.toggle("hidden", status !== "restrito");
 }
 
-async function login(){
+function login(){
     let userDigitado = document.getElementById("user").value.trim();
     let passDigitado = document.getElementById("pass").value.trim();
-
-    // Exemplo de uso correto: o await DEVE estar dentro dos blocos da função async
-    // let resposta = await minhaApi.validar(userDigitado); 
 
     if (userDigitado === "Levi" && passDigitado === "2104") {
         usuarioLogado = "Levi";
@@ -855,8 +852,7 @@ async function login(){
         showToast("Login ou senha incorretos!", "error");
         return;
     }
-} // <-- Garanta que essa chave fecha a função corretamente!
-
+}
     sessionStorage.setItem("_ss_op", btoa(usuarioLogado));
     document.getElementById("lblUsuario").innerText = usuarioLogado;
     document.getElementById("login").classList.add("hidden");
