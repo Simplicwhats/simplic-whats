@@ -841,7 +841,6 @@ function toggleTempoRestritoVisibilidade() {
 // Adicionado "async" aqui para permitir o "await syncLoadAll();" no final
 async function login(){
     let userDigitado = document.getElementById("user").value.trim();
-    let passDigitado = document.getElementById("passened").value.trim(); // Nota: certifique-se se o id é "pass" ou se mudou, usei "pass" conforme os anteriores se necessário, mantive "pass" abaixo:
     let passDigitadoAtual = document.getElementById("pass").value.trim(); 
 
     if (userDigitado === "Levi" && passDigitadoAtual === "2104") {
@@ -853,9 +852,9 @@ async function login(){
     } else {
         showToast("Login ou senha incorretos!", "error");
         return;
-    } // Esta chave fecha o bloco "else" corretamente.
+    }
     
-    // Todo este bloco agora faz parte da função login() legitimamente:
+    // O restante do bloco permanece igual...
     sessionStorage.setItem("_ss_op", btoa(usuarioLogado));
     document.getElementById("lblUsuario").innerText = usuarioLogado;
     document.getElementById("login").classList.add("hidden");
@@ -863,8 +862,7 @@ async function login(){
     
     showToast(`Bem-vindo de volta, ${usuarioLogado}!`, "success");
     await syncLoadAll();
-} // Esta chave agora fecha a função login() no lugar certo!
-
+}
 function logout() {
     usuarioLogado = "";
     sessionStorage.clear();
