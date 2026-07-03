@@ -846,13 +846,13 @@ async function login(){
         usuarioLogado = "Levi";
     } else if (userDigitado === "Mariana" && passDigitado === "123mudar") {
         usuarioLogado = "Mariana";
-    } else {
-        } else if (userDigitado === "Maria" && passDigitado === "duda2025") {
-        usuarioLogado = "Mariana";
+    } else if (userDigitado === "Maria" && passDigitado === "duda2025") { // <-- Novo login adicionado aqui
+        usuarioLogado = "Maria";
     } else {
         showToast("Login ou senha incorretos!", "error");
         return;
     }
+}
 
     sessionStorage.setItem("_ss_op", btoa(usuarioLogado));
     document.getElementById("lblUsuario").innerText = usuarioLogado;
