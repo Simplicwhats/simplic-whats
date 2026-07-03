@@ -838,10 +838,18 @@ function toggleTempoRestritoVisibilidade() {
     document.getElementById("containerTempoRestrito").classList.toggle("hidden", status !== "restrito");
 }
 
-// Adicionado "async" aqui para permitir o "await syncLoadAll();" no final
 async function login(){
-    let userDigitado = document.getElementById("user").value.trim();
-    let passDigitadoAtual = document.getElementById("pass").value.trim(); 
+    let userField = document.getElementById("user");
+    let passField = document.getElementById("pass");
+
+    // Validação de segurança caso os elementos sumam do DOM
+    if (!userField || !passField) {
+        showToast("Erro crítico: Campos de login não encontrados.", "error");
+        return;
+    }
+
+    let userDigitado = userField.value.trim();
+    let passDigitadoAtual = passField.value.trim(); 
 
     if (userDigitado === "Levi" && passDigitadoAtual === "2104") {
         usuarioLogado = "Levi";
@@ -852,9 +860,8 @@ async function login(){
     } else {
         showToast("Login ou senha incorretos!", "error");
         return;
-    }
+    } 
     
-    // O restante do bloco permanece igual...
     sessionStorage.setItem("_ss_op", btoa(usuarioLogado));
     document.getElementById("lblUsuario").innerText = usuarioLogado;
     document.getElementById("login").classList.add("hidden");
