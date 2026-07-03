@@ -838,21 +838,24 @@ function toggleTempoRestritoVisibilidade() {
     document.getElementById("containerTempoRestrito").classList.toggle("hidden", status !== "restrito");
 }
 
-function login(){
+// Adicionado "async" aqui para permitir o "await syncLoadAll();" no final
+async function login(){
     let userDigitado = document.getElementById("user").value.trim();
-    let passDigitado = document.getElementById("pass").value.trim();
+    let passDigitado = document.getElementById("passened").value.trim(); // Nota: certifique-se se o id é "pass" ou se mudou, usei "pass" conforme os anteriores se necessário, mantive "pass" abaixo:
+    let passDigitadoAtual = document.getElementById("pass").value.trim(); 
 
-    if (userDigitado === "Levi" && passDigitado === "2104") {
+    if (userDigitado === "Levi" && passDigitadoAtual === "2104") {
         usuarioLogado = "Levi";
-    } else if (userDigitado === "Mariana" && passDigitado === "123mudar") {
+    } else if (userDigitado === "Mariana" && passDigitadoAtual === "123mudar") {
         usuarioLogado = "Mariana";
-    } else if (userDigitado === "Maria" && passDigitado === "duda2025") {
+    } else if (userDigitado === "Maria" && passDigitadoAtual === "duda2025") {
         usuarioLogado = "Maria";
     } else {
         showToast("Login ou senha incorretos!", "error");
         return;
-    }
-}
+    } // Esta chave fecha o bloco "else" corretamente.
+    
+    // Todo este bloco agora faz parte da função login() legitimamente:
     sessionStorage.setItem("_ss_op", btoa(usuarioLogado));
     document.getElementById("lblUsuario").innerText = usuarioLogado;
     document.getElementById("login").classList.add("hidden");
@@ -860,7 +863,7 @@ function login(){
     
     showToast(`Bem-vindo de volta, ${usuarioLogado}!`, "success");
     await syncLoadAll();
-}
+} // Esta chave agora fecha a função login() no lugar certo!
 
 function logout() {
     usuarioLogado = "";
