@@ -82,6 +82,8 @@ async function login(){
         usuarioLogado = "Mariana";
     } else if (userDigitado === "Maria" && passDigitadoAtual === "duda2025") {
         usuarioLogado = "Maria";
+        } else if (userDigitado === "Jeferson" && passDigitadoAtual === "1234") {
+        usuarioLogado = "Jeferson";
     } else {
         showToast("Login ou senha incorretos!", "error");
         return;
