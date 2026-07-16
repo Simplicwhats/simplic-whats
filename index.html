@@ -112,15 +112,18 @@
                 </div>
 
                 <div class="card">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                        <h3 style="margin: 0;">📝 Scripts & Preview</h3>
-                        <button class="blue small" onclick="abrirModalScriptNovo()" style="margin: 0; padding: 5px 10px;">➕ Criar Script</button>
-                    </div>
-                    <div id="scriptsContainerList" style="max-height: 150px; overflow-y: auto;"></div>
-                    <hr>
-                    <label class="small">Visualização:</label>
-                    <div id="preview" style="background: rgba(0,0,0,0.2); padding: 10px; border-radius: 6px; min-height: 60px; font-family: monospace; white-space: pre-wrap;"></div>
-                </div>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+        <h3 style="margin: 0;">📝 Scripts & Preview</h3>
+        <div style="display: flex; gap: 6px;">
+            <button id="btnEditarScriptAtivo" class="orange small" onclick="editarScriptAtivo()" style="margin: 0; padding: 5px 10px;">📝 Editar Ativo</button>
+            <button class="blue small" onclick="abrirModalScriptNovo()" style="margin: 0; padding: 5px 10px;">➕ Criar Script</button>
+        </div>
+    </div>
+    <div id="scriptsContainerList" style="max-height: 150px; overflow-y: auto;"></div>
+    <hr>
+    <label class="small">Visualização:</label>
+    <div id="preview" style="background: rgba(0,0,0,0.2); padding: 10px; border-radius: 6px; min-height: 60px; font-family: monospace; white-space: pre-wrap;"></div>
+</div>
             </div>
         </div>
     </div>
@@ -252,26 +255,27 @@
     </div>
 
     <div id="containerMiniPlayer" class="hidden" style="position: fixed; bottom: 20px; right: 20px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.4); z-index: 9999; display: flex; align-items: center; gap: 15px;">
-        <div id="visualizerEqualizer" class="equalizer">
-            <span class="bar"></span>
-            <span class="bar"></span>
-            <span class="bar"></span>
-        </div>
-        <div>
-            <div class="small" style="color: var(--text-muted); font-size: 11px;">Tocando agora:</div>
-            <strong id="lblNomeMusicaTocando" style="font-size: 13px;">---</strong>
-        </div>
-        <div id="wrapperAudioNativo" class="hidden">
-            <audio id="playerAudioNativo" controls style="display:none;"></audio>
-        </div>
-        <div id="wrapperAudioYoutube" class="hidden">
-            <iframe id="playerYoutubeIframe" width="0" height="0" frameborder="0" allow="autoplay"></iframe>
-        </div>
-        <div style="display: flex; gap: 8px;">
-            <button class="blue small" onclick="alternarPlayAudio()" style="margin: 0; padding: 5px 10px;">⏸ / ▶</button>
-            <button class="red small" onclick="fecharMiniPlayer()" style="margin: 0; padding: 5px 10px;">✕</button>
-        </div>
+    <div id="visualizerEqualizer" class="equalizer">
+        <span class="bar"></span>
+        <span class="bar"></span>
+        <span class="bar"></span>
     </div>
+    <div>
+        <div class="small" style="color: var(--text-muted); font-size: 11px;">Tocando agora:</div>
+        <strong id="lblNomeMusicaTocando" style="font-size: 13px;">---</strong>
+    </div>
+    <div id="wrapperAudioNativo" class="hidden">
+        <audio id="playerAudioNativo" controls style="display:none;"></audio>
+    </div>
+    <!-- Garantindo que o player do YouTube tenha tamanho mínimo para reprodução se o navegador exigir -->
+    <div id="wrapperAudioYoutube" class="hidden" style="width: 1px; height: 1px; overflow: hidden; opacity: 0.01;">
+        <iframe id="playerYoutubeIframe" width="200" height="200" src="" frameborder="0" allow="autoplay; encrypted-media"></iframe>
+    </div>
+    <div style="display: flex; gap: 8px;">
+        <button class="blue small" onclick="alternarPlayAudio()" style="margin: 0; padding: 5px 10px;">⏸ / ▶</button>
+        <button class="red small" onclick="fecharMiniPlayer()" style="margin: 0; padding: 5px 10px;">✕</button>
+    </div>
+</div>
     
     <script src="app.js"></script>
 </body>
