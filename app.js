@@ -169,7 +169,9 @@ async function syncLoadAll() {
         let resCon = await supabaseClient.from('contacts_queue').select('*').eq('operator_name', usuarioLogado).order('id', { ascending: true });
         contatos = resCon.data || [];
 
-        renderKPIs();
+        // ADICIONE O AWAIT AQUI NESSA LINHA:
+        await renderKPIs(); 
+        
         renderWA();
         renderScripts();
         filtrarEBuscarFila();
@@ -177,7 +179,6 @@ async function syncLoadAll() {
         // Atualiza stats de admin em tempo real
         let painel = document.getElementById("painelAdm");
         if (painel && !painel.classList.contains("hidden")) {
-            // Mantém o filtro atual verificando qual botão foi o último clicado (gambiarra rápida pegando valor padrão 'todos')
             carregarStatsAdm('todos');
         }
     } catch (error) {
@@ -185,18 +186,44 @@ async function syncLoadAll() {
     }
 }
 
-function renderKPIs() {
+async function renderKPIs() {
+    // 1. Filtro do dia de hoje (meia-noite de hoje até o final do dia)
+    const hojeInicio = new Date();
+    hojeInicio.setHours(0, 0, 0, 0);
+    const hojeFim = new Date();
+    hojeFim.setHours(23, 59, 59, 999);
+
+    // 2. Busca assíncrona no Supabase para contar quantos foram enviados HOJE pelo operador ativo
+    let totalEnviadosHoje = 0;
+    try {
+        const { count } = await supabaseClient
+            .from('contacts_queue')
+            .select('*', { count: 'exact', head: true })
+            .eq('operator_name', usuarioLogado)
+            .eq('status', 'Enviado')
+            .gte('updated_at', hojeInicio.toISOString())
+            .lte('updated_at', hojeFim.toISOString());
+            
+        totalEnviadosHoje = count || 0;
+    } catch (err) {
+        console.error("Erro ao buscar acionamentos de hoje:", err);
+        // Fallback rápido caso a consulta falhe (filtra localmente pelo que está na fila carregada)
+        totalEnviadosHoje = contatos.filter(c => c.status === "Enviado").length;
+    }
+
+    // 3. Atualiza os elementos na tela
     const kpiIds = ["kpiTotalFila", "kpiEnviados", "kpiAtivos", "kpiRestritos"];
     kpiIds.forEach(id => {
         let el = document.getElementById(id);
         if (el) {
             if (id === "kpiTotalFila") el.innerText = contatos.length;
-            if (id === "kpiEnviados") el.innerText = contatos.filter(c => c.status === "Enviado").length;
+            if (id === "kpiEnviados") el.innerText = totalEnviadosHoje;
             if (id === "kpiAtivos") el.innerText = whatsappAccounts.filter(w => w.status === "ativo").length;
             if (id === "kpiRestritos") el.innerText = whatsappAccounts.filter(w => w.status === "restrito" || w.status === "banido").length;
         }
     });
 }
+
 
 function limparEValidarTelefone(tel) {
     let limpo = tel.replace(/\D/g, "");
@@ -358,29 +385,39 @@ function abrirEditarModal(i) {
     
     abrirModal("modalEditar");
 }
-async function removeWA(id){
-    if(!confirm("Remover esta conta?")) return;
+async function removeWA(id) {
+    if (!confirm("Remover esta conta?")) return;
     await supabaseClient.from('whatsapp_accounts').delete().eq('id', id);
     showToast("Instância desconectada.", "warning");
     await syncLoadAll();
 }
 
+/* ==========================================
+   FILTRAGEM E BUSCA DE CONTATOS NA FILA (LAYOUT ORIGINAL)
+   ========================================== */
 function mudarFiltroLista(statusAlvo) {
     filtroStatusAtual = statusAlvo;
-    let abas = ['filterTabAll', 'filterTabPendente', 'filterTabEnviado', 'filterTabErro'];
-    abas.forEach(a => document.getElementById(a).classList.remove('active'));
+    const abas = {
+        'todos': 'filterTabAll',
+        'Pendente': 'filterTabPendente',
+        'Enviado': 'filterTabEnviado',
+        'Erro': 'filterTabErro'
+    };
     
-    if(statusAlvo === 'todos') document.getElementById('filterTabAll').classList.add('active');
-    else if(statusAlvo === 'Pendente') document.getElementById('filterTabPendente').classList.add('active');
-    else if(statusAlvo === 'Enviado') document.getElementById('filterTabEnviado').classList.add('active');
-    else if(statusAlvo === 'Erro') document.getElementById('filterTabErro').classList.add('active');
+    Object.values(abas).forEach(abaId => {
+        const el = document.getElementById(abaId);
+        if (el) el.classList.remove('active');
+    });
+    
+    const abaAtiva = document.getElementById(abas[statusAlvo]);
+    if (abaAtiva) abaAtiva.classList.add('active');
 
     filtrarEBuscarFila();
 }
 
 function filtrarEBuscarFila() {
     let buscaInput = document.getElementById("buscaContatoInput");
-    if (!buscaInput) return; // Proteção contra erro de null
+    if (!buscaInput) return; 
 
     let termoBusca = buscaInput.value.trim().toLowerCase();
     let listaFiltrada = contatos;
@@ -396,71 +433,50 @@ function filtrarEBuscarFila() {
     }
     renderContatos(listaFiltrada);
 }
+
+// RETORNADO AO PAINEL ORIGINAL DE ACIONAMENTO
 function renderContatos(dadosFila) {
     let html = "";
+    const containerLista = document.getElementById("lista");
+    if (!containerLista) return;
+
     if (dadosFila.length === 0) {
         html = `<div class="small" style="text-align:center; padding:30px; color:var(--text-muted);">Nenhum número correspondente encontrado.</div>`;
-        document.getElementById("lista").innerHTML = html;
+        containerLista.innerHTML = html;
         return;
     }
 
     dadosFila.forEach((c) => {
         let badgeColor = c.status === 'Enviado' ? 'var(--blue)' : c.status === 'Erro' ? 'var(--red)' : 'var(--text-muted)';
         
-        // Geração do seletor inline de scripts para troca rápida
-        let scriptOptions = listaScripts.map(s => `<option value="${s.id}" ${c.script_nome === s.nome ? 'selected' : ''}>${s.nome}</option>`).join('');
-
         html += `
-        <div class="row" style="padding: 10px 6px;">
+        <div class="row" style="padding: 12px 8px;">
             <div>
                 <span style="font-weight:600; color:#fff;">${c.tel}</span>
-                <div class="small" style="color: var(--purple); font-size:11px; margin-top:2px; display:flex; align-items:center; gap:4px;">
-                    📋 Script: 
-                    <select onchange="alterarScriptContatoFila(${c.id}, this.value)" style="width:auto; padding:2px; margin:0; font-size:11px; height:22px; background:rgba(0,0,0,0.4); border-radius:4px;">
-                        ${scriptOptions || '<option>Nenhum cadastrado</option>'}
-                    </select>
-                </div>
+                <span class="badge-status" style="margin-left:10px; background-color:${badgeColor}; color:#fff; font-size:10px; padding:2px 6px; border-radius:4px;">
+                    ${c.status}
+                </span>
             </div>
             <div class="action-buttons">
-                <select class="select-status-inline" onchange="atualizarStatusContatoManual(${c.id}, this.value)" style="background-color: rgba(0,0,0,0.3); border-color: ${badgeColor}; color: #fff;">
-                    <option value="Pendente" ${c.status === 'Pendente' ? 'selected' : ''}>Pendente</option>
-                    <option value="Enviado" ${c.status === 'Enviado' ? 'selected' : ''}>Enviado</option>
-                    <option value="Erro" ${c.status === 'Erro' ? 'selected' : ''}>Erro / Sem Whats</option>
-                </select>
-                <button onclick="removerContatoFila(${c.id})" class="btn-icon" style="color:#ef4444;">✕</button>
+                <button onclick="removerContatoFila(${c.id})" class="btn-icon" style="color:#ef4444; font-weight:bold; font-size:16px;">✕</button>
             </div>
         </div>`;
     });
-    document.getElementById("lista").innerHTML = html;
+    containerLista.innerHTML = html;
 }
 
-// TROCA DINÂMICA DE SCRIPT DO NÚMERO
-async function alterarScriptContatoFila(contatoId, scriptId) {
-    let scriptObj = listaScripts.find(s => s.id == scriptId);
-    if (!scriptObj) return;
-
-    await supabaseClient.from('contacts_queue').update({
-        script_nome: scriptObj.nome,
-        script_texto: scriptObj.texto
-    }).eq('id', contatoId);
-
-    showToast("Script do contato updated.");
-    await syncLoadAll();
-}
-
-async function atualizarStatusContatoManual(id, novoStatus) {
-    await supabaseClient.from('contacts_queue').update({ status: novoStatus }).eq('id', id);
-    showToast(`Contato marcado como ${novoStatus}`);
-    await syncLoadAll();
-}
-
-async function salvarContatos(){
+/* ==========================================
+   AÇÕES DIRETAS NA FILA DE CONTATOS
+   ========================================== */
+async function salvarContatos() {
     let scriptIdx = document.getElementById("modalSelectScriptDefinido").value;
-    if(scriptIdx === "") return showToast("Selecione um script válido.", "warning");
+    if (scriptIdx === "") return showToast("Selecione um script válido.", "warning");
     
     let scriptVinculado = listaScripts[scriptIdx];
     let rawInput = document.getElementById("telefonesInputModal").value;
     let listagemNovos = rawInput.split("\n").map(x => x.trim()).filter(x => x);
+
+    if (listagemNovos.length === 0) return showToast("Insira ao menos um telefone.", "warning");
 
     let packageData = listagemNovos.map(linha => {
         let partes = linha.split(";");
@@ -473,30 +489,35 @@ async function salvarContatos(){
             tel: numeroLimpo,
             status: "Pendente",
             script_texto: textoCustomizado, 
-            script_nome: scriptVinculado.nome
+            script_nome: scriptVinculado.nome,
+            created_at: new Date().toISOString() // Marcador de data para KPIs corretos
         };
     });
 
     await supabaseClient.from('contacts_queue').insert(packageData);
+    
+    document.getElementById("telefonesInputModal").value = "";
     fecharModal("modalContatos");
     showToast(`${packageData.length} Contatos adicionados.`);
     await syncLoadAll();
 }
 
-async function limparContatos(){
-    if(!confirm("Remover permanentemente toda a fila?")) return;
+async function limparContatos() {
+    if (!confirm("Remover permanentemente toda a fila?")) return;
     await supabaseClient.from('contacts_queue').delete().eq('operator_name', usuarioLogado);
     showToast("Fila esvaziada.", "info");
     await syncLoadAll();
 }
 
-async function removerContatoFila(id){
+async function removerContatoFila(id) {
     await supabaseClient.from('contacts_queue').delete().eq('id', id);
     showToast("Contato excluído da lista.");
     await syncLoadAll();
 }
 
-/* SCRIPTS */
+/* ==========================================
+   GERENCIAMENTO DE SCRIPTS DE MENSAGENS
+   ========================================== */
 function abrirModalScriptNovo() {
     document.getElementById("tituloScriptModal").innerText = "Criar Novo Script";
     document.getElementById("editScriptId").value = ""; 
@@ -505,15 +526,22 @@ function abrirModalScriptNovo() {
     abrirModal("modalScript");
 }
 
-async function salvarScript(){
+async function salvarScript() {
     let idExistente = document.getElementById("editScriptId").value;
     let nome = document.getElementById("nomeScriptModal").value.trim();
     let texto = document.getElementById("textoScriptModal").value.trim();
     
+    if (!nome || !texto) return showToast("Preencha o nome e o texto do script.", "warning");
+
     if (idExistente) {
         await supabaseClient.from('message_scripts').update({ nome: nome, texto: texto }).eq('id', idExistente);
     } else {
-        await supabaseClient.from('message_scripts').insert([{ operator_name: usuarioLogado, nome: nome, texto: texto, selected: listaScripts.length === 0 }]);
+        await supabaseClient.from('message_scripts').insert([{ 
+            operator_name: usuarioLogado, 
+            nome: nome, 
+            texto: texto, 
+            selected: listaScripts.length === 0 
+        }]);
     }
     fecharModal("modalScript");
     showToast("Script atualizado com sucesso.");
@@ -526,8 +554,14 @@ function renderScripts() {
         let base64 = btoa(unescape(encodeURIComponent(s.texto)));
         html += `
         <div class="row" style="padding: 8px 6px;">
-            <div style="display: flex; align-items: center; flex: 1; cursor: pointer;" onclick="selectScript(${s.id})">
-                <span style="font-weight: 600; color: ${s.selected ? 'var(--blue)' : '#fff'};">${s.nome}</span>
+            <div style="display: flex; align-items: center; flex: 1; justify-content: space-between;">
+                <span style="font-weight: 600; cursor: pointer; color: ${s.selected ? 'var(--blue)' : '#fff'};" onclick="selectScript(${s.id})">
+                    ${s.selected ? '🔹 ' : ''}${s.nome}
+                </span>
+                <div class="action-buttons">
+                    <button onclick="prepararEdicaoScript(${s.id}, '${s.nome}', '${base64}')" class="btn-icon" style="color:#3b82f6;">📝</button>
+                    <button onclick="removerScript(${s.id})" class="btn-icon" style="color:#ef4444;">✕</button>
+                </div>
             </div>
         </div>`;
     });
@@ -538,8 +572,16 @@ function renderScripts() {
     let containerPreview = document.getElementById("preview");
     if (containerPreview) {
         let ativo = listaScripts.find(x => x.selected);
-        containerPreview.innerText = ativo ? ativo.texto : "Nenhum script.";
+        containerPreview.innerText = ativo ? ativo.texto : "Nenhum script ativo selecionado.";
     }
+}
+
+// EDITAR SCRIPT SELECIONADO DIRETAMENTE DO PREVIEW
+function editarScriptAtivo() {
+    let ativo = listaScripts.find(x => x.selected);
+    if (!ativo) return showToast("Nenhum script ativo para editar.", "warning");
+    let base64 = btoa(unescape(encodeURIComponent(ativo.texto)));
+    prepararEdicaoScript(ativo.id, ativo.nome, base64);
 }
 
 function prepararEdicaoScript(id, nome, b64) {
@@ -553,67 +595,117 @@ function prepararEdicaoScript(id, nome, b64) {
 async function selectScript(id) {
     await supabaseClient.from('message_scripts').update({ selected: false }).eq('operator_name', usuarioLogado);
     await supabaseClient.from('message_scripts').update({ selected: true }).eq('id', id);
+    showToast("Script ativo alterado.");
     await syncLoadAll();
 }
 
-async function removerScript(id){
-    if(!confirm("Deletar script?")) return;
+async function removerScript(id) {
+    if (!confirm("Deletar este script?")) return;
     await supabaseClient.from('message_scripts').delete().eq('id', id);
+    showToast("Script removido.", "warning");
     await syncLoadAll();
 }
 
-/* TIMER REGRESSIVO & DISPARO SEGURO */
+/* ==========================================
+   CÁLCULO E FORMATAÇÃO DE RESTRIÇÕES (DIA/HORA)
+   ========================================== */
+function formatRemainingTime(timestampFuturo) {
+    let agora = Date.now();
+    let diferenca = timestampFuturo - agora;
+    
+    if (diferenca <= 0) return "";
+
+    let totalSegundos = Math.floor(diferenca / 1000);
+    let totalMinutos = Math.floor(totalSegundos / 60);
+    let totalHoras = Math.floor(totalMinutos / 60);
+    let dias = Math.floor(totalHoras / 24);
+
+    let horasRestantes = totalHoras % 24;
+    let minutosRestantes = totalMinutos % 60;
+
+    if (dias > 0) {
+        return `${dias}d ${horasRestantes.toString().padStart(2, '0')}h`;
+    } else if (totalHoras > 0) {
+        return `${totalHoras.toString().padStart(2, '0')}h ${minutosRestantes.toString().padStart(2, '0')}m`;
+    } else {
+        let segundosRestantes = totalSegundos % 60;
+        return `${minutosRestantes.toString().padStart(2, '0')}m ${segundosRestantes.toString().padStart(2, '0')}s`;
+    }
+}
+
+/* ==========================================
+   TIMER REGRESSIVO & DISPARO SEGURO
+   ========================================== */
 function iniciarContagemEnvio() {
     let wa = whatsappAccounts.find(x => x.selected);
-    if(!wa || wa.status === "banido") return showToast("Verifique sua instância ativa antes de enviar.", "error");
+    if (!wa || wa.status === "banido") return showToast("Verifique sua instância ativa antes de enviar.", "error");
 
     let proximoContato = contatos.find(c => c.status === "Pendente");
-    if(!proximoContato) return showToast("Nenhum contato pendente na fila.", "warning");
+    if (!proximoContato) return showToast("Nenhum contato pendente na fila.", "warning");
 
     cancelarEnvioRegressivo();
     segundosRestantesRegressivo = 3;
-    document.getElementById("lblRegressivoSegundo").innerText = segundosRestantesRegressivo;
-    document.getElementById("timerContainerBanner").classList.remove("hidden");
-    document.getElementById("btnProximoChamado").disabled = true;
+    
+    const banner = document.getElementById("timerContainerBanner");
+    const labelSegundos = document.getElementById("lblRegressivoSegundo");
+    const btnProximo = document.getElementById("btnProximoChamado");
+
+    if (labelSegundos) labelSegundos.innerText = segundosRestantesRegressivo;
+    if (banner) banner.classList.remove("hidden");
+    if (btnProximo) btnProximo.disabled = true;
 
     regressiveTimerPointer = setInterval(async () => {
         segundosRestantesRegressivo--;
-        document.getElementById("lblRegressivoSegundo").innerText = segundosRestantesRegressivo;
+        if (labelSegundos) labelSegundos.innerText = segundosRestantesRegressivo;
 
         if (segundosRestantesRegressivo <= 0) {
             clearInterval(regressiveTimerPointer);
-            document.getElementById("timerContainerBanner").classList.add("hidden");
-            document.getElementById("btnProximoChamado").disabled = false;
+            if (banner) banner.classList.add("hidden");
+            if (btnProximo) btnProximo.disabled = false;
             await dispararProximoWhatsappEfetivo(wa, proximoContato);
         }
     }, 1000);
 }
 
 function cancelarEnvioRegressivo() {
-    if(regressiveTimerPointer) clearInterval(regressiveTimerPointer);
-    document.getElementById("timerContainerBanner").classList.add("hidden");
-    document.getElementById("btnProximoChamado").disabled = false;
+    if (regressiveTimerPointer) clearInterval(regressiveTimerPointer);
+    const banner = document.getElementById("timerContainerBanner");
+    const btnProximo = document.getElementById("btnProximoChamado");
+    
+    if (banner) banner.classList.add("hidden");
+    if (btnProximo) btnProximo.disabled = false;
 }
 
-// ATUALIZAÇÃO AUTOMÁTICA E DISPARO SEM BLOQUEIO
 async function dispararProximoWhatsappEfetivo(wa, contatoAlvo) {
-    await supabaseClient.from('contacts_queue').update({ status: 'Enviado' }).eq('id', contatoAlvo.id);
+    // Atualiza o contato para Enviado e guarda o timestamp do envio
+    await supabaseClient.from('contacts_queue').update({ 
+        status: 'Enviado',
+        updated_at: new Date().toISOString()
+    }).eq('id', contatoAlvo.id);
+    
     await supabaseClient.from('whatsapp_accounts').update({ sent: wa.sent + 1 }).eq('id', wa.id);
 
     let urlDisparo = "https://web.whatsapp.com/send/?phone=" + contatoAlvo.tel + "&text=" + encodeURIComponent(contatoAlvo.script_texto);
     
     window.open(urlDisparo, "_blank");
     
-    showToast("Enviado e atualizado automaticamente!");
+    showToast("Enviado e atualizado com sucesso!");
     await syncLoadAll();
 }
 
-/* MUSIC PLAYER AUDIOFLOW & CSS EQUALIZER */
+/* ==========================================
+   MUSIC PLAYER AUDIOFLOW (SUPORTE INTEGRAL AO YOUTUBE)
+   ========================================== */
 function mudarAbaMusica(aba) {
-    document.getElementById("tabBtnBusca").classList.toggle("active", aba === 'busca');
-    document.getElementById("tabBtnLink").classList.toggle("active", aba === 'link');
-    document.getElementById("abaMusicaBusca").classList.toggle("hidden", aba !== 'busca');
-    document.getElementById("abaMusicaLink").classList.toggle("hidden", aba !== 'link');
+    const tabBusca = document.getElementById("tabBtnBusca");
+    const tabLink = document.getElementById("tabBtnLink");
+    const abaBusca = document.getElementById("abaMusicaBusca");
+    const abaLink = document.getElementById("abaMusicaLink");
+
+    if (tabBusca) tabBusca.classList.toggle("active", aba === 'busca');
+    if (tabLink) tabLink.classList.toggle("active", aba === 'link');
+    if (abaBusca) abaBusca.classList.toggle("hidden", aba !== 'busca');
+    if (abaLink) abaLink.classList.toggle("hidden", aba !== 'link');
 }
 
 async function buscarMusicaPorNome() {
@@ -623,24 +715,38 @@ async function buscarMusicaPorNome() {
         let resposta = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(termo)}&entity=song&limit=4`);
         let dados = await resposta.json();
         let htmlResultados = "";
+        
         dados.results.forEach(faixa => {
             htmlResultados += `
             <div class="busca-item-resultado" style="display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid var(--border-color);">
-                <div><strong>${faixa.trackName}</strong><br><span class="small">${faixa.artistName}</span></div>
-                <button class="green" onclick="ejecutarAudioSessao('${faixa.previewUrl}', '${faixa.trackName}', false)" style="margin:0; padding:4px 10px;">▶</button>
+                <div><strong>${faixa.trackName}</strong><br><span class="small" style="color: var(--text-muted);">${faixa.artistName}</span></div>
+                <button class="green" onclick="ejecutarAudioSessao('${faixa.previewUrl}', '${faixa.trackName.replace(/'/g, "\\'")}', false)" style="margin:0; padding:4px 10px;">▶</button>
             </div>`;
         });
         document.getElementById("containerResultadosBusca").innerHTML = htmlResultados;
-    } catch (e) { showToast("Falha ao buscar música.", "error"); }
+    } catch (e) { 
+        showToast("Falha ao buscar música.", "error"); 
+    }
 }
 
-function carregarLofiPadrao() { ejecutarAudioSessao("https://stream.zeno.fm/0r0xa792kwzuv", "Rádio Lofi Chill", false); }
+function carregarLofiPadrao() { 
+    ejecutarAudioSessao("https://stream.zeno.fm/0r0xa792kwzuv", "Rádio Lofi Chill", false); 
+}
 
 function carregarMusicaUrl() {
     let url = document.getElementById("inputLinkMusica").value.trim();
-    if(url.includes("youtube.com") || url.includes("youtu.be")) {
-        let id = url.match(/(?:v=|\/embed\/|\/\d+\/|\/vi\/|youtu\.be\/|embeds\/)([^#\&\?]*)/)[1];
-        ejecutarAudioSessao(`https://www.youtube.com/embed/${id}?autoplay=1`, "YouTube Vídeo", true);
+    if (!url) return;
+    
+    if (url.includes("youtube.com") || url.includes("youtu.be")) {
+        let regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+        let match = url.match(regExp);
+        if (match && match[2].length === 11) {
+            let id = match[2];
+            // Configuração para embutir autoplay no player
+            ejecutarAudioSessao(`https://www.youtube.com/embed/${id}?autoplay=1&enablejsapi=1`, "YouTube Vídeo", true);
+        } else {
+            showToast("URL do YouTube inválida.", "warning");
+        }
     } else {
         ejecutarAudioSessao(url, "Mídia Externa", false);
     }
@@ -648,28 +754,62 @@ function carregarMusicaUrl() {
 
 function ejecutarAudioSessao(urlAudio, nome, isIframe) {
     let playerNativo = document.getElementById("playerAudioNativo");
-    document.getElementById("lblNomeMusicaTocando").innerText = nome;
-    document.getElementById("containerMiniPlayer").classList.remove("hidden");
-    document.getElementById("visualizerEqualizer").classList.add("playing");
+    const labelNome = document.getElementById("lblNomeMusicaTocando");
+    const miniPlayer = document.getElementById("containerMiniPlayer");
+    const equalizer = document.getElementById("visualizerEqualizer");
 
-    if(isIframe) {
-        playerNativo.pause();
+    if (labelNome) labelNome.innerText = nome;
+    if (miniPlayer) miniPlayer.classList.remove("hidden");
+    if (equalizer) equalizer.classList.add("playing");
+
+    if (isIframe) {
+        if (playerNativo) {
+            playerNativo.pause();
+            playerNativo.src = "";
+        }
         document.getElementById("wrapperAudioNativo").classList.add("hidden");
         document.getElementById("wrapperAudioYoutube").classList.remove("hidden");
         document.getElementById("playerYoutubeIframe").src = urlAudio;
     } else {
+        // Pausar o Iframe do YouTube limpando a sua URL
+        document.getElementById("playerYoutubeIframe").src = "";
         document.getElementById("wrapperAudioYoutube").classList.add("hidden");
         document.getElementById("wrapperAudioNativo").classList.remove("hidden");
-        playerNativo.src = urlAudio;
-        playerNativo.play().catch(() => {});
+        if (playerNativo) {
+            playerNativo.src = urlAudio;
+            playerNativo.play().catch(() => {});
+        }
     }
     fecharModal("modalMusica");
 }
 
 function alternarPlayAudio() {
     let p = document.getElementById("playerAudioNativo");
-    if (p.paused) { p.play(); document.getElementById("visualizerEqualizer").classList.add("playing"); } 
-    else { p.pause(); document.getElementById("visualizerEqualizer").classList.remove("playing"); }
+    const equalizer = document.getElementById("visualizerEqualizer");
+    const ytIframe = document.getElementById("playerYoutubeIframe");
+    
+    // Se estiver tocando YouTube, alternar limpando/restabelecendo o link
+    if (ytIframe && ytIframe.src !== "" && !document.getElementById("wrapperAudioYoutube").classList.contains("hidden")) {
+        if (equalizer.classList.contains("playing")) {
+            equalizer.classList.remove("playing");
+            // Salva a URL atual e limpa para simular pause no iframe
+            ytIframe.dataset.savedSrc = ytIframe.src;
+            ytIframe.src = "";
+        } else {
+            equalizer.classList.add("playing");
+            ytIframe.src = ytIframe.dataset.savedSrc || "";
+        }
+        return;
+    }
+
+    if (!p) return;
+    if (p.paused) { 
+        p.play().catch(() => {}); 
+        if (equalizer) equalizer.classList.add("playing"); 
+    } else { 
+        p.pause(); 
+        if (equalizer) equalizer.classList.remove("playing"); 
+    }
 }
 
 function fecharMiniPlayer() {
@@ -687,8 +827,9 @@ function fecharMiniPlayer() {
     if (equalizer) equalizer.classList.remove("playing");
 }
 
-/* JOGO DA VELHA COMPLETO */
-
+/* ==========================================
+   MINI-GAME: JOGO DA VELHA CONTRA I.A.
+   ========================================== */
 let jogoAtActive = true;
 let tabuleiroSessao = ["", "", "", "", "", "", "", "", ""];
 
@@ -739,26 +880,29 @@ function jogada(index) {
 
     document.getElementById("statusJogo").innerText = "🤖 IA pensando...";
 
-    let ia = escolherJogadaIA();
+    setTimeout(() => {
+        let ia = escolherJogadaIA();
 
-    if (ia !== null) {
-        tabuleiroSessao[ia] = "O";
-        document.querySelectorAll(".quadrado")[ia].innerText = "O";
+        if (ia !== null && jogoAtActive) {
+            tabuleiroSessao[ia] = "O";
+            document.querySelectorAll(".quadrado")[ia].innerText = "O";
 
-        if (checarVitoria("O")) {
-            document.getElementById("statusJogo").innerText = "🤖 Fim de jogo para você.";
-            jogoAtActive = false;
-            return;
+            if (checarVitoria("O")) {
+                document.getElementById("statusJogo").innerText = "🤖 Fim de jogo para você.";
+                jogoAtActive = false;
+                return;
+            }
+
+            if (!tabuleiroSessao.includes("")) {
+                document.getElementById("statusJogo").innerText = "🤝 Empate!";
+                jogoAtActive = false;
+                return;
+            }
         }
-
-        if (!tabuleiroSessao.includes("")) {
-            document.getElementById("statusJogo").innerText = "🤝 Empate!";
-            jogoAtActive = false;
-            return;
+        if (jogoAtActive) {
+            document.getElementById("statusJogo").innerText = "Sua vez! (Você é o X)";
         }
-    }
-
-    document.getElementById("statusJogo").innerText = "Sua vez! (Você é o X)";
+    }, 450);
 }
 
 function checarVitoria(s) {
@@ -774,13 +918,22 @@ function resetJogo() {
     document.getElementById("statusJogo").innerText = "Sua vez! (Você é o X)";
 }
 
-// LOOP REAL-TIME
+/* ==========================================
+   LOOP DE ATUALIZAÇÃO EM TEMPO REAL (Timers)
+   ========================================== */
 setInterval(async () => {
     if (!usuarioLogado) return;
     whatsappAccounts.forEach((w, i) => {
         let el = document.getElementById(`badge-status-${i}`);
         if (el && w.status === "restrito" && w.restricted_until) {
-            el.innerText = "restrito: " + formatRemainingTime(Number(w.restricted_until));
+            let tempoFormatado = formatRemainingTime(Number(w.restricted_until));
+            if (tempoFormatado) {
+                el.innerText = "restrito: " + tempoFormatado;
+            } else {
+                // Se a restrição acabou, removemos o status de restrito no banco de dados automaticamente
+                el.innerText = "ativo";
+                supabaseClient.from('whatsapp_accounts').update({ status: 'ativo', restricted_until: null }).eq('id', w.id);
+            }
         }
     });
 }, 1000);
