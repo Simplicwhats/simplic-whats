@@ -402,7 +402,7 @@ hr {
     animation: slideIn 0.3s ease forwards;
 }
 
-/* PREMIUM PLAYER SOUNDWAVE */
+/* PREMIUM PLAYER SOUNDWAVE / EQUALIZER */
 .premium-player {
     background: linear-gradient(135deg, #0f172a 0%, #111827 100%) !important;
     border: 1px solid rgba(245, 158, 11, 0.25) !important;
@@ -415,25 +415,33 @@ hr {
     background: linear-gradient(90deg, var(--orange), #ef4444);
 }
 
-.soundwave-container {
+.equalizer {
     display: flex;
     align-items: flex-end;
     gap: 3px;
     height: 20px;
+    width: 20px;
 }
-.soundwave-bar {
+.equalizer .bar, .soundwave-bar {
     width: 3px;
     height: 4px;
     background: var(--orange);
     border-radius: 2px;
+    transition: height 0.2s ease;
 }
-.playing .soundwave-bar {
+.equalizer.playing .bar, .playing .soundwave-bar {
     animation: waveBounce 0.6s infinite alternate;
 }
-.playing .soundwave-bar:nth-child(2) { animation-delay: 0.1s; }
-.playing .soundwave-bar:nth-child(3) { animation-delay: 0.25s; }
-.playing .soundwave-bar:nth-child(4) { animation-delay: 0.05s; }
-.playing .soundwave-bar:nth-child(5) { animation-delay: 0.15s; }
+.equalizer.playing .bar:nth-child(1), .playing .soundwave-bar:nth-child(1) { animation-delay: 0.1s; }
+.equalizer.playing .bar:nth-child(2), .playing .soundwave-bar:nth-child(2) { animation-delay: 0.25s; }
+.equalizer.playing .bar:nth-child(3), .playing .soundwave-bar:nth-child(3) { animation-delay: 0.05s; }
+.playing .soundwave-bar:nth-child(4) { animation-delay: 0.15s; }
+.playing .soundwave-bar:nth-child(5) { animation-delay: 0.2s; }
+
+/* SEGURANÇA E SUPORTE AO YOUTUBE EM SEGUNDO PLANO */
+#wrapperAudioYoutube.hidden {
+    display: none !important;
+}
 
 /* CRITICAL SHIELD FLASH */
 @keyframes warningFlash {
