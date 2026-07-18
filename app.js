@@ -328,11 +328,27 @@ async function gerarScriptComIA() {
     btn.innerText = "Gerando...";
 
     try {
-        const { data, error } = await supabaseClient.functions.invoke('gerar-script', {
-            body: { prompt: p }
+        // COLOQUE AQUI A URL DO SEU PROJETO E A CHAVE ANON (as mesmas que ficam no topo do app.js)
+        const supabaseUrl = "https://kgidkxaqvgcqiqwqxvut.supabase.co"; 
+        const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtnaWRreGFxdmdjcWlxd3F4dnV0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0ODc0MzAsImV4cCI6MjA5ODA2MzQzMH0.DLQoO8_q_QeW-a084ZDCFRc0OIeuEDaYpkUg2tSCB0E";
+
+        // Fazemos a chamada "na força bruta", contornando o bloqueio interno do Supabase
+        const response = await fetch(`${supabaseUrl}/functions/v1/gerar-script`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${supabaseAnonKey}`
+            },
+            body: JSON.stringify({ prompt: p })
         });
 
-        if (error) throw error;
+        if (!response.ok) {
+            throw new Error(`Erro do servidor: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        if (data.error) throw new Error(data.error);
 
         document.getElementById("textoScriptModal").value = data.texto;
         abrirModal("modalScript");
@@ -347,7 +363,6 @@ async function gerarScriptComIA() {
         btn.innerText = "✨ Gerar Script";
     }
 }
-
 // ==========================================
 // PLAYER DE MÚSICA & JOGO (CÓDIGO ORIGINAL)
 // ==========================================
