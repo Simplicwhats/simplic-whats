@@ -318,7 +318,35 @@ async function selectScript(id) { await supabaseClient.from('scripts').update({ 
 async function removerScript(id) { if(confirm("Deletar script?")) { await supabaseClient.from('scripts').delete().eq('id', id); syncLoadAll(); } }
 function prepararEdicaoScript(id, n, c, b64) { document.getElementById("tituloScriptModal").textContent = "Editar Script"; document.getElementById("editScriptId").value = id; document.getElementById("nomeScriptModal").value = n; document.getElementById("categoriaScriptModal").value = c; document.getElementById("textoScriptModal").value = decodeURIComponent(escape(atob(b64))); abrirModal("modalScript"); }
 function editarScriptAtivo() { let a = listaScripts.find(x=>x.favorito); if(a) prepararEdicaoScript(a.id, a.nome, a.categoria, btoa(unescape(encodeURIComponent(a.conteudo)))); }
-function simularGeracaoIA() { let p = document.getElementById("promptIA").value; if(!p) return showToast("Digite um prompt.", "warning"); showToast("🤖 Gerando com Inteligência Artificial...", "info"); setTimeout(()=>{ document.getElementById("textoScriptModal").value = "Olá {nome}, identificamos uma pendência em aberto. Podemos ajudar a regularizar hoje?"; abrirModal("modalScript"); fecharModal("modalIA"); }, 2000); }
+async function gerarScriptComIA() {
+    let p = document.getElementById("promptIA").value;
+    if (!p) return showToast("Digite as instruções para a IA.", "warning");
+
+    showToast("🤖 Conectando com a IA... Aguarde.", "info");
+    const btn = event.target;
+    btn.disabled = true;
+    btn.innerText = "Gerando...";
+
+    try {
+        const { data, error } = await supabaseClient.functions.invoke('gerar-script', {
+            body: { prompt: p }
+        });
+
+        if (error) throw error;
+
+        document.getElementById("textoScriptModal").value = data.texto;
+        abrirModal("modalScript");
+        fecharModal("modalIA");
+        showToast("✨ Script gerado com sucesso!", "success");
+
+    } catch (err) {
+        console.error("Erro na IA:", err);
+        showToast("Erro ao comunicar com a IA. Tente novamente.", "error");
+    } finally {
+        btn.disabled = false;
+        btn.innerText = "✨ Gerar Script";
+    }
+}
 
 // ==========================================
 // PLAYER DE MÚSICA & JOGO (CÓDIGO ORIGINAL)
