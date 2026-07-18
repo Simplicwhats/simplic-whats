@@ -49,6 +49,9 @@ async function login() {
         usuarioLogado = user.username;
         carteiraLogada = user.carteira || c;
         
+        // 🎒 SALVANDO NA MOCHILA:
+        localStorage.setItem('carteiraAtiva', carteiraLogada);
+        
         document.body.setAttribute('data-company', carteiraLogada);
         document.getElementById("lblEmpresa").textContent = carteiraLogada === "Simplic" ? "🟩 Simplic Workspace" : "🟧 Loft Workspace";
         document.getElementById("lblUsuario").textContent = usuarioLogado;
@@ -293,11 +296,26 @@ async function processarEnvio(wa, contato) {
 // ==========================================
 function abrirModalScriptNovo() { document.getElementById("tituloScriptModal").textContent = "Criar Script"; document.getElementById("editScriptId").value = ""; document.getElementById("nomeScriptModal").value = ""; document.getElementById("textoScriptModal").value = ""; abrirModal("modalScript"); }
 async function salvarScript() {
-    let id = document.getElementById("editScriptId").value, n = document.getElementById("nomeScriptModal").value.trim(), c = document.getElementById("categoriaScriptModal").value, txt = document.getElementById("textoScriptModal").value.trim();
+    let id = document.getElementById("editScriptId").value, 
+        n = document.getElementById("nomeScriptModal").value.trim(), 
+        c = document.getElementById("categoriaScriptModal").value, 
+        txt = document.getElementById("textoScriptModal").value.trim();
+        
     if(!n || !txt) return showToast("Preencha tudo.", "warning");
-    if(id) await supabaseClient.from('scripts').update({ nome: n, categoria: c, conteudo: txt }).eq('id', id);
-    else await supabaseClient.from('scripts').insert([{ carteira: carteiraLogada, nome: n, categoria: c, conteudo: txt, favorito: listaScripts.length===0 }]);
-    fecharModal("modalScript"); showToast("Script salvo!"); syncLoadAll();
+
+    // Puxa a carteira que guardamos na mochila lá no login
+    let carteiraSegura = localStorage.getItem('carteiraAtiva');
+
+    if(id) {
+        await supabaseClient.from('scripts').update({ nome: n, categoria: c, conteudo: txt }).eq('id', id);
+    } else {
+        // 👉 AQUI FOI A MUDANÇA: trocamos 'carteiraLogada' por 'carteiraSegura'
+        await supabaseClient.from('scripts').insert([{ carteira: carteiraSegura, nome: n, categoria: c, conteudo: txt, favorito: listaScripts.length===0 }]);
+    }
+    
+    fecharModal("modalScript"); 
+    showToast("Script salvo!"); 
+    syncLoadAll();
 }
 function renderScripts() {
     let catFiltro = document.getElementById("filtroCategoriaScript").value;
