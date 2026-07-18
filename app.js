@@ -107,16 +107,37 @@ function exportarDados(tipo) { showToast(`Exportando relatório em ${tipo.toUppe
 async function syncLoadAll() {
     if(!usuarioLogado) return;
     try {
-        let resWa = await supabaseClient.from('whatsapp_accounts').select('*').eq('carteira', carteiraLogada).order('id', { ascending: true });
+        // Busca as Instâncias do Operador na respectiva Carteira
+        let resWa = await supabaseClient.from('whatsapp_accounts')
+            .select('*')
+            .eq('carteira', carteiraLogada)
+            .eq('operator_name', usuarioLogado)
+            .order('id', { ascending: true });
         whatsappAccounts = resWa.data || [];
-        let resScr = await supabaseClient.from('scripts').select('*').eq('carteira', carteiraLogada).order('id', { ascending: true });
+
+        // Busca os Scripts do Operador na respectiva Carteira
+        let resScr = await supabaseClient.from('scripts')
+            .select('*')
+            .eq('carteira', carteiraLogada)
+            .eq('operator_name', usuarioLogado)
+            .order('id', { ascending: true });
         listaScripts = resScr.data || [];
-        // Filtra pendentes agendados ou sem agendamento + enviados de hoje do operador
-        let resCon = await supabaseClient.from('contacts_queue').select('*').eq('carteira', carteiraLogada).order('id', { ascending: true });
+
+        // Busca a Fila de Contatos do Operador na respectiva Carteira
+        let resCon = await supabaseClient.from('contacts_queue')
+            .select('*')
+            .eq('carteira', carteiraLogada)
+            .eq('operator_name', usuarioLogado)
+            .order('id', { ascending: true });
         contatos = resCon.data || [];
         
-        renderKPIs(); renderWA(); renderScripts(); filtrarEBuscarFila();
-    } catch(e) { console.error(e); }
+        renderKPIs(); 
+        renderWA(); 
+        renderScripts(); 
+        filtrarEBuscarFila();
+    } catch(e) { 
+        console.error("Erro no syncLoadAll:", e); 
+    }
 }
 
 function renderKPIs() {
