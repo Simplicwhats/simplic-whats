@@ -335,9 +335,36 @@ function ejecutarAudioSessao(url, nome, isIframe) {
     fecharModal("modalMusica");
 }
 function alternarPlayAudio() {
-    let eq = document.getElementById("visualizerEqualizer"), yt = document.getElementById("playerYoutubeIframe"), pn = document.getElementById("playerAudioNativo");
-    if(yt.src && yt.src!=="") { if(eq.classList.contains("playing")){ eq.classList.remove("playing"); yt.dataset.savedSrc=yt.src; yt.src=""; } else { eq.classList.add("playing"); yt.src=yt.dataset.savedSrc; } return; }
-    if(pn.paused) { pn.play(); eq.classList.add("playing"); } else { pn.pause(); eq.classList.remove("playing"); }
+    let eq = document.getElementById("visualizerEqualizer");
+    let yt = document.getElementById("playerYoutubeIframe");
+    let pn = document.getElementById("playerAudioNativo");
+
+    // Lógica para quando for vídeo do YouTube
+    if (!document.getElementById("wrapperAudioYoutube").classList.contains("hidden")) {
+        if (eq.classList.contains("playing")) {
+            // Pausa a animação
+            eq.classList.remove("playing");
+            // Envia comando de PAUSE interno para o YouTube sem apagar o vídeo
+            yt.contentWindow.postMessage('{"event":"command","func":"pauseVideo","args":""}', '*');
+        } else {
+            // Retoma a animação
+            eq.classList.add("playing");
+            // Envia comando de PLAY interno para o YouTube de onde parou
+            yt.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
+        }
+        return;
+    }
+
+    // Lógica para quando for MP3 ou Rádio Lofi (Áudio Nativo)
+    if (pn.src && pn.src !== "") {
+        if (pn.paused) { 
+            pn.play(); 
+            eq.classList.add("playing"); 
+        } else { 
+            pn.pause(); 
+            eq.classList.remove("playing"); 
+        }
+    }
 }
 function fecharMiniPlayer() { document.getElementById("playerAudioNativo").pause(); document.getElementById("playerYoutubeIframe").src=""; document.getElementById("containerMiniPlayer").classList.add("hidden"); document.getElementById("visualizerEqualizer").classList.remove("playing"); }
 
