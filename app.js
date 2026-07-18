@@ -257,15 +257,18 @@ function abrirEditarModal(i) {
 }
 
 function toggleTempoRestritoVisibilidade() {
-    // 👉 AQUI FOI CORRIGIDO: Coloquei os IDs certinhos do seu HTML
     let selectStatus = document.getElementById("editModalStatus"); 
     let divTempo = document.getElementById("containerTempoRestrito"); 
 
     if (selectStatus && divTempo) {
         if (selectStatus.value === "restrito") {
-            divTempo.style.display = "block"; // Mostra o campo
+            // Arranca a classe "hidden" e força a aparecer
+            divTempo.classList.remove("hidden"); 
+            divTempo.style.display = "block"; 
         } else {
-            divTempo.style.display = "none";  // Esconde o campo
+            // Coloca a classe "hidden" de volta e esconde
+            divTempo.classList.add("hidden");  
+            divTempo.style.display = "none"; 
         }
     }
 }
