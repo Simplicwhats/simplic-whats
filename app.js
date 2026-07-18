@@ -285,16 +285,39 @@ function abrirEditarModal(i) {
         let restUntil = null;
         
         if(st === "restrito") {
-            let unidade = document.getElementById("editModalUnidade").value;
-            let tempoDigitado = parseFloat(document.getElementById("editModalTempo").value || 0);
-            
-            // Lógica de tempo (1 segundo = 1000 milissegundos)
-            let multiplicador = 1000; // Padrão: Segundos
-            if (unidade === "minutos") multiplicador = 60000;
-            if (unidade === "horas") multiplicador = 3600000;
-            if (unidade === "dias") multiplicador = 86400000;
-            
-            restUntil = Date.now() + (tempoDigitado * multiplicador);
+            // Pegamos exatamente o que você digitou e deixamos em minúsculas
+            let inputTexto = document.getElementById("editModalTempo").value.trim().toLowerCase();
+            let milissegundosTotal = 0;
+
+            // O "Tradutor" procura por padrões como 1d, 2h, 30m, 15s
+            let regex = /(\d+)\s*(d|h|m|s)/g;
+            let matches = [...inputTexto.matchAll(regex)];
+
+            if (matches.length > 0) {
+                // Modo Avançado: Somando múltiplos tempos (ex: 1h20m30s)
+                matches.forEach(match => {
+                    let valor = parseInt(match[1]);
+                    let letra = match[2];
+                    
+                    if (letra === 'd') milissegundosTotal += valor * 86400000;
+                    if (letra === 'h') milissegundosTotal += valor * 3600000;
+                    if (letra === 'm') milissegundosTotal += valor * 60000;
+                    if (letra === 's') milissegundosTotal += valor * 1000;
+                });
+            } else {
+                // Modo Padrão: Apenas número + dropdown (ex: 5 Minutos)
+                let tempoDigitado = parseFloat(inputTexto || 0);
+                let unidadeSelect = document.getElementById("editModalUnidade").value;
+                
+                let multiplicador = 1000; // Padrão: Segundos
+                if (unidadeSelect === "minutos") multiplicador = 60000;
+                if (unidadeSelect === "horas") multiplicador = 3600000;
+                if (unidadeSelect === "dias") multiplicador = 86400000;
+                
+                milissegundosTotal = tempoDigitado * multiplicador;
+            }
+
+            restUntil = Date.now() + milissegundosTotal;
         }
         
         await supabaseClient.from('whatsapp_accounts').update({ 
@@ -307,12 +330,11 @@ function abrirEditarModal(i) {
         
         fecharModal('modalEditar'); 
         syncLoadAll(); 
-        showToast("Instância salva!");
+        showToast("Instância atualizada com sucesso!");
     }; 
     
     abrirModal('modalEditar');
 }
-
 function toggleTempoRestritoVisibilidade() {
     let selectStatus = document.getElementById("editModalStatus"); 
     let divTempo = document.getElementById("containerTempoRestrito"); 
