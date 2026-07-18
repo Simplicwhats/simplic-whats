@@ -195,6 +195,30 @@ function renderWA() {
     whatsappAccounts.forEach((w, i) => {
         let color = w.status === "restrito" ? "var(--orange)" : w.status === "banido" ? "var(--red)" : "var(--green)";
         let alert = w.sent >= 40 ? `<span class="badge-status bg-red text-white ml-10">⚠️ ${w.sent}/50</span>` : '';
+        
+        // Lógica do Cronômetro de Restrição
+        let tempoRestanteHtml = "";
+        if (w.status === "restrito" && w.restricted_until) {
+            let agora = Date.now();
+            let diff = w.restricted_until - agora;
+            
+            if (diff > 0) {
+                let horas = Math.floor(diff / (1000 * 60 * 60));
+                let dias = Math.floor(horas / 24);
+                
+                if (dias > 0) {
+                    tempoRestanteHtml = `<span class="small ml-10" style="color: var(--orange);">⏳ Libera em ${dias} dia(s)</span>`;
+                } else if (horas > 0) {
+                    tempoRestanteHtml = `<span class="small ml-10" style="color: var(--orange);">⏳ Libera em ${horas} hora(s)</span>`;
+                } else {
+                    let minutos = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                    tempoRestanteHtml = `<span class="small ml-10" style="color: var(--orange);">⏳ Libera em ${minutos} min</span>`;
+                }
+            } else {
+                tempoRestanteHtml = `<span class="small text-green ml-10">✅ Tempo esgotado!</span>`;
+            }
+        }
+
         html += `
         <div class="row radius-8 bg-light-overlay">
             <div class="flex-row align-center gap-10">
@@ -204,12 +228,14 @@ function renderWA() {
                 <span class="badge-status ml-10" style="border:1px solid var(--blue); color:var(--blue);">${w.role}</span>
             </div>
             <div class="flex-row gap-5 align-center">
-                <span class="badge-status text-white" style="background:${color}">${w.status}</span>
+                ${tempoRestanteHtml}
+                <span class="badge-status text-white" style="background:${color}">${w.status.toUpperCase()}</span>
                 <button onclick="abrirEditarModal(${i})" class="btn-icon text-blue">📝</button>
                 <button onclick="removeWA('${w.id}')" class="btn-icon text-red">✕</button>
             </div>
         </div>`;
     });
+    
     document.getElementById("waList").innerHTML = html;
 }
 
