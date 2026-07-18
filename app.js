@@ -55,11 +55,11 @@ async function login() {
         
         document.body.setAttribute('data-company', carteiraLogada);
         if (carteiraLogada === "Simplic") {
-    document.getElementById("lblEmpresa").textContent = "Simplic Workspace";
+    document.getElementById("lblEmpresa").textContent = "Simplic";
     document.getElementById("logoEmpresa").src = "./logo-simplic.png"; // <-- Coloque o link da logo aqui
     document.getElementById("logoEmpresa").style.display = "block";
 } else {
-    document.getElementById("lblEmpresa").textContent = "Loft Workspace";
+    document.getElementById("lblEmpresa").textContent = "Loft";
     document.getElementById("logoEmpresa").src = "./logo-loft.png"; // <-- Coloque o link da logo aqui
     document.getElementById("logoEmpresa").style.display = "block";
 }
