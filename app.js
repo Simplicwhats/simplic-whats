@@ -196,27 +196,10 @@ function renderWA() {
         let color = w.status === "restrito" ? "var(--orange)" : w.status === "banido" ? "var(--red)" : "var(--green)";
         let alert = w.sent >= 40 ? `<span class="badge-status bg-red text-white ml-10">⚠️ ${w.sent}/50</span>` : '';
         
-        // Lógica do Cronômetro de Restrição
+        // Criamos o campo vazio do cronômetro. O "Motor" ali embaixo vai preencher ele!
         let tempoRestanteHtml = "";
         if (w.status === "restrito" && w.restricted_until) {
-            let agora = Date.now();
-            let diff = w.restricted_until - agora;
-            
-            if (diff > 0) {
-                let horas = Math.floor(diff / (1000 * 60 * 60));
-                let dias = Math.floor(horas / 24);
-                
-                if (dias > 0) {
-                    tempoRestanteHtml = `<span class="small ml-10" style="color: var(--orange);">⏳ Libera em ${dias} dia(s)</span>`;
-                } else if (horas > 0) {
-                    tempoRestanteHtml = `<span class="small ml-10" style="color: var(--orange);">⏳ Libera em ${horas} hora(s)</span>`;
-                } else {
-                    let minutos = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-                    tempoRestanteHtml = `<span class="small ml-10" style="color: var(--orange);">⏳ Libera em ${minutos} min</span>`;
-                }
-            } else {
-                tempoRestanteHtml = `<span class="small text-green ml-10">✅ Tempo esgotado!</span>`;
-            }
+            tempoRestanteHtml = `<span class="small ml-10 timer-restricao fw-600" data-until="${w.restricted_until}" data-id="${w.id}" style="color: var(--orange);">⏳ Calculando...</span>`;
         }
 
         html += `
@@ -239,6 +222,47 @@ function renderWA() {
     document.getElementById("waList").innerHTML = html;
 }
 
+// O Motor do Tempo (Fica rodando a cada 1 segundo)
+setInterval(() => {
+    let timers = document.querySelectorAll('.timer-restricao');
+    
+    timers.forEach(async (el) => {
+        let until = parseInt(el.getAttribute('data-until'));
+        let waId = el.getAttribute('data-id');
+        let agora = Date.now();
+        let diff = until - agora;
+
+        if (diff > 0) {
+            // Converte os milissegundos restantes
+            let d = Math.floor(diff / (1000 * 60 * 60 * 24));
+            let h = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            let m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            let s = Math.floor((diff % (1000 * 60)) / 1000);
+
+            // Monta o visual: "1d 02:15:09" 
+            let tempoTexto = "⏳ ";
+            if (d > 0) tempoTexto += `${d}d `;
+            tempoTexto += `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+            
+            el.textContent = tempoTexto; 
+        } else {
+            // O TEMPO ACABOU!
+            el.textContent = "✅ Liberando...";
+            el.classList.remove('timer-restricao'); 
+            
+            // Acorda a conta no Supabase
+            await supabaseClient.from('whatsapp_accounts').update({ 
+                status: 'ativo', 
+                restricted_until: null 
+            }).eq('id', waId);
+            
+            // Atualiza a tela
+            syncLoadAll(); 
+            showToast("Uma instância saiu da restrição e está ATIVA novamente!");
+        }
+    });
+}, 1000);
+
 async function selectWA(id) {
     await supabaseClient.from('whatsapp_accounts').update({ selected: false }).eq('carteira', carteiraLogada);
     await supabaseClient.from('whatsapp_accounts').update({ selected: true }).eq('id', id); syncLoadAll();
@@ -254,16 +278,23 @@ function abrirEditarModal(i) {
     document.getElementById("editModalRole").value = w.role;
     document.getElementById("editModalStatus").value = w.status;
     
-    // Mostra ou esconde a caixa de tempo assim que abre o modal, caso já esteja restrito
     toggleTempoRestritoVisibilidade(); 
 
     document.getElementById("btnSalvarEdicao").onclick = async function() {
         let st = document.getElementById("editModalStatus").value;
         let restUntil = null;
         
-        // 👉 AQUI FOI CORRIGIDO: Tiramos o .toISOString() para gerar apenas o número (bigint)
         if(st === "restrito") {
-            restUntil = Date.now() + (parseFloat(document.getElementById("editModalTempo").value || 0) * (document.getElementById("editModalUnidade").value === 'dias' ? 86400000 : 3600000));
+            let unidade = document.getElementById("editModalUnidade").value;
+            let tempoDigitado = parseFloat(document.getElementById("editModalTempo").value || 0);
+            
+            // Lógica de tempo (1 segundo = 1000 milissegundos)
+            let multiplicador = 1000; // Padrão: Segundos
+            if (unidade === "minutos") multiplicador = 60000;
+            if (unidade === "horas") multiplicador = 3600000;
+            if (unidade === "dias") multiplicador = 86400000;
+            
+            restUntil = Date.now() + (tempoDigitado * multiplicador);
         }
         
         await supabaseClient.from('whatsapp_accounts').update({ 
@@ -276,7 +307,7 @@ function abrirEditarModal(i) {
         
         fecharModal('modalEditar'); 
         syncLoadAll(); 
-        showToast("Instância atualizada com sucesso!");
+        showToast("Instância salva!");
     }; 
     
     abrirModal('modalEditar');
