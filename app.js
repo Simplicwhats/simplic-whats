@@ -220,23 +220,46 @@ async function selectWA(id) {
 async function removeWA(id) { if(confirm("Remover?")) { await supabaseClient.from('whatsapp_accounts').delete().eq('id', id); syncLoadAll(); } }
 
 function abrirEditarModal(i) {
-    contaEditandoIndex = i; let w = whatsappAccounts[i];
+    contaEditandoIndex = i; 
+    let w = whatsappAccounts[i];
+    
     document.getElementById("editModalNumero").value = w.number;
     document.getElementById("editModalSent").value = w.sent;
     document.getElementById("editModalRole").value = w.role;
     document.getElementById("editModalStatus").value = w.status;
+    
+    // Mostra ou esconde a caixa de tempo assim que abre o modal, caso já esteja restrito
+    toggleTempoRestritoVisibilidade(); 
+
     document.getElementById("btnSalvarEdicao").onclick = async function() {
-        let st = document.getElementById("editModalStatus").value, restUntil = null;
-        if(st === "restrito") restUntil = new Date(Date.now() + (parseFloat(document.getElementById("editModalTempo").value||0) * (document.getElementById("editModalUnidade").value==='dias'?86400000:3600000))).toISOString();
-        await supabaseClient.from('whatsapp_accounts').update({ number: limparEValidarTelefone(document.getElementById("editModalNumero").value), sent: parseInt(document.getElementById("editModalSent").value), role: document.getElementById("editModalRole").value, status: st, restricted_until: restUntil }).eq('id', w.id);
-        fecharModal('modalEditar'); syncLoadAll(); showToast("Salvo.");
-    }; abrirModal('modalEditar');
+        let st = document.getElementById("editModalStatus").value;
+        let restUntil = null;
+        
+        // 👉 AQUI FOI CORRIGIDO: Tiramos o .toISOString() para gerar apenas o número (bigint)
+        if(st === "restrito") {
+            restUntil = Date.now() + (parseFloat(document.getElementById("editModalTempo").value || 0) * (document.getElementById("editModalUnidade").value === 'dias' ? 86400000 : 3600000));
+        }
+        
+        await supabaseClient.from('whatsapp_accounts').update({ 
+            number: limparEValidarTelefone(document.getElementById("editModalNumero").value), 
+            sent: parseInt(document.getElementById("editModalSent").value), 
+            role: document.getElementById("editModalRole").value, 
+            status: st, 
+            restricted_until: restUntil 
+        }).eq('id', w.id);
+        
+        fecharModal('modalEditar'); 
+        syncLoadAll(); 
+        showToast("Instância atualizada com sucesso!");
+    }; 
+    
+    abrirModal('modalEditar');
 }
 
 function toggleTempoRestritoVisibilidade() {
-    // Verifique se os IDs abaixo batem com os do seu HTML do modal de edição
-    let selectStatus = document.getElementById("editWaStatus"); // ID do campo de Status
-    let divTempo = document.getElementById("divTempoRestrito"); // ID da div que envolve o campo de tempo
+    // 👉 AQUI FOI CORRIGIDO: Coloquei os IDs certinhos do seu HTML
+    let selectStatus = document.getElementById("editModalStatus"); 
+    let divTempo = document.getElementById("containerTempoRestrito"); 
 
     if (selectStatus && divTempo) {
         if (selectStatus.value === "restrito") {
