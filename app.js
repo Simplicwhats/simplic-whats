@@ -333,7 +333,7 @@ async function gerarScriptComIA() {
         const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtnaWRreGFxdmdjcWlxd3F4dnV0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0ODc0MzAsImV4cCI6MjA5ODA2MzQzMH0.DLQoO8_q_QeW-a084ZDCFRc0OIeuEDaYpkUg2tSCB0E";
 
         // Fazemos a chamada "na força bruta", contornando o bloqueio interno do Supabase
-        const response = await fetch(`${supabaseUrl}/functions/v1/gerar-script`, {
+        const response = await fetch(`${supabaseUrl}/functions/v1/hyper-handler`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
