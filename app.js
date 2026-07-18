@@ -53,7 +53,15 @@ async function login() {
         localStorage.setItem('carteiraAtiva', carteiraLogada);
         
         document.body.setAttribute('data-company', carteiraLogada);
-        document.getElementById("lblEmpresa").textContent = carteiraLogada === "Simplic" ? "🟩 Simplic Workspace" : "🟧 Loft Workspace";
+        if (carteiraLogada === "Simplic") {
+    document.getElementById("lblEmpresa").textContent = "Simplic Workspace";
+    document.getElementById("logoEmpresa").src = "URL_DA_SUA_LOGO_SIMPLIC.png"; // <-- Coloque o link da logo aqui
+    document.getElementById("logoEmpresa").style.display = "block";
+} else {
+    document.getElementById("lblEmpresa").textContent = "Loft Workspace";
+    document.getElementById("logoEmpresa").src = "URL_DA_SUA_LOGO_LOFT.png"; // <-- Coloque o link da logo aqui
+    document.getElementById("logoEmpresa").style.display = "block";
+}
         document.getElementById("lblUsuario").textContent = usuarioLogado;
         
         document.getElementById("login").classList.add("hidden");
@@ -303,13 +311,19 @@ async function salvarScript() {
         
     if(!n || !txt) return showToast("Preencha tudo.", "warning");
 
-    // Puxa a carteira que guardamos na mochila lá no login
     let carteiraSegura = localStorage.getItem('carteiraAtiva');
+
+    // 👉 ADICIONE ESTE BLOCO AQUI (O nosso "espião")
+    console.log("--- 🕵️ DADOS QUE ESTÃO INDO PARA O BANCO ---");
+    console.log("1. Carteira Segura:", carteiraSegura);
+    console.log("2. Nome:", n);
+    console.log("3. Categoria:", c);
+    console.log("4. Conteúdo:", txt);
+    console.log("--------------------------------------------");
 
     if(id) {
         await supabaseClient.from('scripts').update({ nome: n, categoria: c, conteudo: txt }).eq('id', id);
     } else {
-        // 👉 AQUI FOI A MUDANÇA: trocamos 'carteiraLogada' por 'carteiraSegura'
         await supabaseClient.from('scripts').insert([{ carteira: carteiraSegura, nome: n, categoria: c, conteudo: txt, favorito: listaScripts.length===0 }]);
     }
     
