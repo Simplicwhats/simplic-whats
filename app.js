@@ -233,6 +233,19 @@ function abrirEditarModal(i) {
     }; abrirModal('modalEditar');
 }
 
+function toggleTempoRestritoVisibilidade() {
+    // Verifique se os IDs abaixo batem com os do seu HTML do modal de edição
+    let selectStatus = document.getElementById("editWaStatus"); // ID do campo de Status
+    let divTempo = document.getElementById("divTempoRestrito"); // ID da div que envolve o campo de tempo
+
+    if (selectStatus && divTempo) {
+        if (selectStatus.value === "restrito") {
+            divTempo.style.display = "block"; // Mostra o campo
+        } else {
+            divTempo.style.display = "none";  // Esconde o campo
+        }
+    }
+}
 // ==========================================
 // FILA INTELIGENTE E DISPARO
 // ==========================================
