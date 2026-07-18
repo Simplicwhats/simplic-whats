@@ -51,15 +51,16 @@ async function login() {
         
         // 🎒 SALVANDO NA MOCHILA:
         localStorage.setItem('carteiraAtiva', carteiraLogada);
+        localStorage.setItem('nomeOperador', usuarioLogado);
         
         document.body.setAttribute('data-company', carteiraLogada);
         if (carteiraLogada === "Simplic") {
     document.getElementById("lblEmpresa").textContent = "Simplic Workspace";
-    document.getElementById("logoEmpresa").src = "URL_DA_SUA_LOGO_SIMPLIC.png"; // <-- Coloque o link da logo aqui
+    document.getElementById("logoEmpresa").src = "./logo-simplic.png"; // <-- Coloque o link da logo aqui
     document.getElementById("logoEmpresa").style.display = "block";
 } else {
     document.getElementById("lblEmpresa").textContent = "Loft Workspace";
-    document.getElementById("logoEmpresa").src = "URL_DA_SUA_LOGO_LOFT.png"; // <-- Coloque o link da logo aqui
+    document.getElementById("logoEmpresa").src = "./logo-loft.png"; // <-- Coloque o link da logo aqui
     document.getElementById("logoEmpresa").style.display = "block";
 }
         document.getElementById("lblUsuario").textContent = usuarioLogado;
@@ -162,9 +163,30 @@ function renderKPIs() {
 // INSTÂNCIAS E AUTOMAÇÃO (45/50)
 // ==========================================
 async function addWA() {
-    let num = document.getElementById("waNumber").value.trim(), role = document.getElementById("waRole").value;
-    if(!num) return showToast("Digite um número válido", "warning");
-    await supabaseClient.from('whatsapp_accounts').insert([{ number: limparEValidarTelefone(num), role: role, status: "ativo", selected: whatsappAccounts.length===0, carteira: carteiraLogada }]);
+    // Aqui você já deve ter as variáveis pegando os valores da tela, algo como:
+    let numero = document.getElementById("waNumber").value.trim();
+    let funcao = document.getElementById("waRole").value;
+
+    if (!numero) return showToast("Digite o número!", "warning");
+
+    // 👉 1. Puxamos a carteira e o operador da mochila:
+    let carteiraSegura = localStorage.getItem('carteiraAtiva');
+    let operadorSeguro = localStorage.getItem('nomeOperador');
+
+    // 👉 2. Adicionamos os dois no pacote de envio para o banco:
+    const { data, error } = await supabaseClient.from('whatsapp_accounts').insert([{ 
+        number: numero, 
+        role: funcao, 
+        status: 'ativo', 
+        carteira: carteiraSegura,       // Agora vai preenchido certo!
+        operator_name: operadorSeguro   // Aqui está a chave que o banco pedia!
+    }]);
+
+    if (error) {
+        console.error("Erro ao salvar número:", error);
+        return showToast("Erro ao conectar instância.", "error");
+    }
+
     document.getElementById("waNumber").value = ""; showToast("Instância conectada!"); syncLoadAll();
 }
 
@@ -311,20 +333,22 @@ async function salvarScript() {
         
     if(!n || !txt) return showToast("Preencha tudo.", "warning");
 
+    // Puxa a carteira e o operador da nossa mochila
     let carteiraSegura = localStorage.getItem('carteiraAtiva');
-
-    // 👉 ADICIONE ESTE BLOCO AQUI (O nosso "espião")
-    console.log("--- 🕵️ DADOS QUE ESTÃO INDO PARA O BANCO ---");
-    console.log("1. Carteira Segura:", carteiraSegura);
-    console.log("2. Nome:", n);
-    console.log("3. Categoria:", c);
-    console.log("4. Conteúdo:", txt);
-    console.log("--------------------------------------------");
+    let operadorSeguro = localStorage.getItem('nomeOperador'); // Puxando o nome!
 
     if(id) {
         await supabaseClient.from('scripts').update({ nome: n, categoria: c, conteudo: txt }).eq('id', id);
     } else {
-        await supabaseClient.from('scripts').insert([{ carteira: carteiraSegura, nome: n, categoria: c, conteudo: txt, favorito: listaScripts.length===0 }]);
+        // 👉 AQUI A MÁGICA ACONTECE: Adicionamos o 'operator_name: operadorSeguro' no envio
+        await supabaseClient.from('scripts').insert([{ 
+            carteira: carteiraSegura, 
+            operator_name: operadorSeguro, // Essa coluna agora vai preenchida!
+            nome: n, 
+            categoria: c, 
+            conteudo: txt, 
+            favorito: listaScripts.length===0 
+        }]);
     }
     
     fecharModal("modalScript"); 
