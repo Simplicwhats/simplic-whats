@@ -396,47 +396,91 @@ async function salvarContatos() {
     if(pkgs.length > 0) { await supabaseClient.from('contacts_queue').insert(pkgs); setTimeout(()=>{fecharModal("modalContatos"); syncLoadAll(); document.getElementById("telefonesInputModal").value="";}, 1500); }
 }
 
-function iniciarContagemEnvio() { filaPausada = false; document.getElementById("btnProximoChamado").classList.add("hidden"); document.getElementById("btnPausarFila").classList.remove("hidden"); executarLoopEnvio(); }
-function pausarFila() { filaPausada = true; clearInterval(timerRegressivo); document.getElementById("btnPausarFila").classList.add("hidden"); document.getElementById("btnProximoChamado").classList.remove("hidden"); document.getElementById("timerContainerBanner").classList.add("hidden"); }
-
-async function executarLoopEnvio() {
-    if(filaPausada) return;
-    let wa = whatsappAccounts.find(x => x.selected && x.status === "ativo"), contato = contatos.find(c => c.status === "Pendente");
-    if(!contato) { showToast("Fila finalizada!", "info"); return pausarFila(); }
-    if(!wa) { showToast("Sem instância ativa!", "error"); return pausarFila(); }
+function iniciarContagemEnvio() {
+    filaPausada = false;
+    // Oculta o botão de iniciar e mostra o botão de pausar/parar
+    document.getElementById("btnProximoChamado").classList.add("hidden");
+    document.getElementById("btnPausarFila").classList.remove("hidden");
     
-    document.getElementById("timerContainerBanner").classList.remove("hidden");
-    let seg = 3; document.getElementById("lblRegressivoSegundo").textContent = seg;
-    timerRegressivo = setInterval(async () => {
-        seg--; document.getElementById("lblRegressivoSegundo").textContent = seg;
-        if(seg <= 0) { clearInterval(timerRegressivo); await processarEnvio(wa, contato); }
-    }, 1000);
+    // Executa imediatamente o primeiro envio ao clicar em iniciar
+    executarProximoEnvioManual();
 }
 
-async function processarEnvio(wa, contato) {
+function pausarFila() {
+    filaPausada = true;
+    clearInterval(timerRegressivo);
+    document.getElementById("btnPausarFila").classList.add("hidden");
+    document.getElementById("btnProximoChamado").classList.remove("hidden");
+    document.getElementById("timerContainerBanner").classList.add("hidden");
+}
+
+// Função acionada a cada clique em "Próximo" ou no início da fila
+async function executarProximoEnvioManual() {
+    if (filaPausada) return;
+
+    let wa = whatsappAccounts.find(x => x.selected && x.status === "ativo");
+    let contato = contatos.find(c => c.status === "Pendente");
+
+    if (!contato) {
+        showToast("Fila finalizada!", "info");
+        return pausarFila();
+    }
+    if (!wa) {
+        showToast("Sem instância ativa!", "error");
+        return pausarFila();
+    }
+
+    // Processa o envio atual (marca como enviado, abre a aba e atualiza contadores)
+    await processarEnvioManual(wa, contato);
+}
+
+async function processarEnvioManual(wa, contato) {
     let script = listaScripts.find(s => s.nome === contato.script_nome);
     let textoStr = script ? script.conteudo : "Olá!";
-    textoStr = textoStr.replace(/\{nome\}/gi, contato.nome||"").replace(/\{empresa\}/gi, contato.empresa||carteiraLogada);
+    textoStr = textoStr.replace(/\{nome\}/gi, contato.nome || "").replace(/\{empresa\}/gi, contato.empresa || carteiraLogada);
     
+    // Atualiza status no banco para "Enviado"
     await supabaseClient.from('contacts_queue').update({ status: 'Enviado' }).eq('id', contato.id);
-    await supabaseClient.from('history').insert([{ telefone: contato.tel, nome_cliente: contato.nome, operador: usuarioLogado, empresa: carteiraLogada, script_utilizado: contato.script_nome, instancia_utilizada: wa.number }]);
+    await supabaseClient.from('history').insert([{ 
+        telefone: contato.tel, 
+        nome_cliente: contato.nome, 
+        operador: usuarioLogado, 
+        empresa: carteiraLogada, 
+        script_utilizado: contato.script_nome, 
+        instancia_utilizada: wa.number 
+    }]);
     
+    // Regras de limite da instância (45/50)
     let novosEnvios = wa.sent + 1, attWA = { sent: novosEnvios };
-    if(novosEnvios >= 50) {
-        attWA.status = "restrito"; attWA.restricted_until = new Date(Date.now() + 86400000).toISOString(); attWA.selected = false;
+    if (novosEnvios >= 50) {
+        attWA.status = "restrito"; 
+        attWA.restricted_until = new Date(Date.now() + 86400000).toISOString(); 
+        attWA.selected = false;
         showToast(`Instância ${wa.number} RESTRITA (50 envios).`, "warning");
         let prox = whatsappAccounts.find(x => x.id !== wa.id && x.status === 'ativo' && x.role === 'preventive');
-        if(prox) await supabaseClient.from('whatsapp_accounts').update({ selected: true }).eq('id', prox.id);
+        if (prox) await supabaseClient.from('whatsapp_accounts').update({ selected: true }).eq('id', prox.id);
     } else if (novosEnvios >= 45 && wa.role === 'preventive') {
-        attWA.role = "reserva"; attWA.selected = false;
+        attWA.role = "reserva"; 
+        attWA.selected = false;
         showToast(`Instância rotacionada para reserva.`, "info");
         let prox = whatsappAccounts.find(x => x.id !== wa.id && x.status === 'ativo');
-        if(prox) await supabaseClient.from('whatsapp_accounts').update({ selected: true }).eq('id', prox.id);
+        if (prox) await supabaseClient.from('whatsapp_accounts').update({ selected: true }).eq('id', prox.id);
     }
+    
     await supabaseClient.from('whatsapp_accounts').update(attWA).eq('id', wa.id);
     
+    // Abre a aba do WhatsApp Web para o cliente atual
     window.open(`https://web.whatsapp.com/send/?phone=${contato.tel}&text=${encodeURIComponent(textoStr)}`, "_blank");
-    await syncLoadAll(); if(!filaPausada) setTimeout(executarLoopEnvio, 2000);
+    
+    // Sincroniza a tela, mas NÃO chama setTimeout para o próximo. 
+    // O sistema agora aguarda você clicar novamente no botão.
+    await syncLoadAll();
+    
+    // Altera o botão de controle para "Próximo Cliente" para você clicar quando voltar
+    document.getElementById("btnPausarFila").classList.add("hidden");
+    document.getElementById("btnProximoChamado").classList.remove("hidden");
+    document.getElementById("btnProximoChamado").textContent = "👉 Próximo Cliente";
+    filaPausada = true; // Trava o loop automático
 }
 
 // ==========================================
